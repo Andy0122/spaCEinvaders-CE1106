@@ -1,0 +1,31 @@
+# ========================
+# REGLAS PARA JAVA
+# ========================
+# Ignorar archivos compilados
+*.class
+# Ignorar la carpeta binaria de Java
+1_Servidor_Java/bin/
+
+# ========================
+# REGLAS PARA C 
+# ========================
+# Ignorar objetos compilados y ejecutables
+*.o
+*.out
+*.exe
+2_Cliente_C/build/
+
+# ========================
+# REGLAS PARA PICO (C Embebido / CMake)
+# ========================
+# Ignorar toda la carpeta build de la Pico 
+3_Controlador_Pico/build/
+*.uf2
+*.elf
+
+# ========================
+# REGLAS DEL SISTEMA OPERATIVO / IDE
+# ========================
+.DS_Store
+.vscode/
+.idea/
