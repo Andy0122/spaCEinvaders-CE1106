@@ -1,38 +1,33 @@
-# --- CONFIGURACIÓN DEL COMPILADOR ---
+# Variables de compilación
 CC = gcc
-# Banderas de compilación: -Wall muestra advertencias, -I indica dónde están los .h
-CFLAGS = -Wall -I include
-# Banderas de enlazado (LDFLAGS): IMPORTANTE PARA WINDOWS
-# Si usas Windows, descomenta la siguiente línea para que los Sockets funcionen:
-# LDFLAGS = -lws2_32
+CFLAGS = -Wall -I./include
+LDFLAGS = -lws2_32
 
-# --- CARPETAS ---
+# Definición de carpetas
 SRC_DIR = src
-BUILD_DIR = build
+INC_DIR = include
+BIN_DIR = .
 
-# --- ARCHIVOS ---
-# Busca todos los .c en src/ y genera los nombres de los .o
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRCS))
+# Archivos fuente y de objeto
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/red.c $(SRC_DIR)/gui.c $(SRC_DIR)/estructuras_datos.c
+OBJS = $(SRCS:.c=.o)
+EXEC = $(BIN_DIR)/cliente_spaceinvaders.exe
 
-# Nombre del ejecutable final
-TARGET = $(BUILD_DIR)/cliente_juego
+# Regla principal
+all: $(EXEC)
 
-# --- REGLAS PRINCIPALES ---
-all: $(TARGET)
+# Enlace (Linking)
+$(EXEC): $(OBJS)
+	$(CC) $(OBJS) -o $(EXEC) $(LDFLAGS)
+	@echo "========================================="
+	@echo "Compilacion exitosa: $(EXEC)"
+	@echo "========================================="
 
-# Cómo crear el ejecutable final
-$(TARGET): $(OBJS)
-	@mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-	@echo "¡Compilación exitosa! Ejecutable creado en $(TARGET)"
-
-# Cómo compilar cada .c individualmente
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(BUILD_DIR)
+# Compilación de cada archivo fuente
+%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Regla para limpiar los compilados (útil cuando algo se traba)
+# Regla para limpiar archivos generados
 clean:
-	rm -rf $(BUILD_DIR)/*
-	@echo "Archivos compilados eliminados."
+	del /Q src\*.o
+	del /Q cliente_spaceinvaders.exe

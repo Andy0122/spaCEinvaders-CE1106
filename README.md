@@ -3,9 +3,9 @@ Tarea del curso Paradigmas de Programación (CE1106).
 Instituto Tecnológico de Costa Rica.
 
 ## 👥 Integrantes del Grupo
-* Integrante 1 (Carné)
-* Integrante 2 (Carné)
-* Integrante 3 (Carné)
+* Frander Picado Mena 2022101904
+* Samuel Morales Cascante 2024130487
+* Dylan Elizondo Picado 2023086320
 
 ## 🚀 Arquitectura del Proyecto
 Este repositorio contiene un monorepo dividido en tres partes:
