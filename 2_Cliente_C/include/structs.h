@@ -26,7 +26,20 @@ typedef struct {
     int id;            /**< Identificador único del alienígena */
     int x;             /**< Posición actual en el eje X */
     int y;             /**< Posición actual en el eje Y */
-    int puntos;        /**< Puntos otorgados: 10, 20 o 40 */
+    int tipo;          /**< 10 (Calamar), 20 (Cangrejo) o 40 (Pulpo) */
+    int estado;        /**< 1 = Vivo, 0 = Muerto */
 } Extraterrestre;
+
+/**
+ * @struct Bunker
+ * @brief Modela los escudos de protección terrestre.
+ * Representa las barreras físicas que se degradan con los disparos.
+ */
+typedef struct {
+    int id;                 /**< Identificador único del escudo */
+    int x;                  /**< Posición actual en el eje X de la pantalla */
+    int y;                  /**< Posición actual en el eje Y de la pantalla */
+    int porcentaje_salud;   /**< Salud restante del escudo: 100, 70, 40 o 0 */
+} Bunker;
 
 #endif // STRUCTS_H

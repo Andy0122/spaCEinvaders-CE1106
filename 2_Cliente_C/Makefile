@@ -1,7 +1,14 @@
 # Variables de compilación
 CC = gcc
+
+# -I./include le dice a gcc que busque raylib.h ahí
 CFLAGS = -Wall -I./include
-LDFLAGS = -lws2_32
+
+# -L./lib le dice que busque libraylib.a en esa carpeta
+# -lraylib enlaza la biblioteca
+# -lgdi32 y -lwinmm son obligatorias en Windows para usar Raylib
+# -lws2_32 es la de sockets que ya tenías
+LDFLAGS = -L./lib -lraylib -lgdi32 -lwinmm -lws2_32
 
 # Definición de carpetas
 SRC_DIR = src
