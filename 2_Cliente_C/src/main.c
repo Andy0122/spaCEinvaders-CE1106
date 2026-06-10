@@ -1,7 +1,7 @@
 /**
  * @file main.c
  * @brief Punto de entrada principal para el cliente C de spaCEinvaders.
- * Orquesta la inicialización de módulos, datos de prueba y el ciclo principal de juego.
+ * Gestiona el menú inicial (A8), la conexión (A5) y el ciclo de renderizado (A3).
  */
 
 #include <stdio.h>
@@ -15,90 +15,133 @@
 #include "../include/structs.h" 
 
 int main() {
+    // 1. Menú Inicial y Selección de Rol
+    int opcion_rol = 1;
+    int partida_id = 1;
+    char cadena_handshake[64];
+
     printf("======================================\n");
     printf("     CLIENTE SPA-CE-INVADERS (C)      \n");
     printf("======================================\n");
+    printf("1. Entrar como Jugador 1 (Partida 1)\n");
+    printf("2. Entrar como Jugador 2 (Partida 2)\n");
+    printf("3. Entrar como Espectador\n");
+    printf("Seleccione una opcion: ");
+    scanf("%d", &opcion_rol);
 
-    // 1. Inicialización de la comunicación (Comentado temporalmente para pruebas locales)
+    if (opcion_rol == 3) {
+        printf("Que partida desea observar? (1 o 2): ");
+        scanf("%d", &partida_id);
+        sprintf(cadena_handshake, "ESPECTADOR|%d\n", partida_id);
+    } else if (opcion_rol == 1) {
+        sprintf(cadena_handshake, "JUGADOR|1\n");
+    } else {
+        sprintf(cadena_handshake, "JUGADOR|2\n");
+        partida_id = 2; // Asegura que el Jugador 2 vea la partida 2
+    }
+
+    // 2. Creación de arreglos en memoria local
+    Jugador arreglo_jugadores[2] = {
+        {1, ANCHO_PANTALLA / 2, VIDAS_INICIALES, 0},
+        {2, ANCHO_PANTALLA / 2, VIDAS_INICIALES, 0}
+    };
+
+    Bunker arreglo_bunkers[CANTIDAD_BUNKERS];
+    int espacio_bunkers = ANCHO_PANTALLA / CANTIDAD_BUNKERS;
+    for (int i = 0; i < CANTIDAD_BUNKERS; i++) {
+        arreglo_bunkers[i].id = i;
+        arreglo_bunkers[i].x = (espacio_bunkers * i) + (espacio_bunkers / 4);
+        arreglo_bunkers[i].y = ALTO_PANTALLA - 150;
+        arreglo_bunkers[i].porcentaje_salud = 100; 
+    }
+
+    int total_aliens = FILAS_ALIENS * COLUMNAS_ALIENS;
+    Extraterrestre arreglo_aliens[FILAS_ALIENS * COLUMNAS_ALIENS];
+    int indice = 0;
+    
+    for (int fila = 0; fila < FILAS_ALIENS; fila++) {
+        for (int col = 0; col < COLUMNAS_ALIENS; col++) {
+            arreglo_aliens[indice].id = indice;
+            arreglo_aliens[indice].x = 50 + (col * (ANCHO_ALIEN + 15));
+            arreglo_aliens[indice].y = 80 + (fila * (ALTO_ALIEN + 15));
+            arreglo_aliens[indice].estado = 1; 
+            
+            if (fila == 0) arreglo_aliens[indice].tipo = 40; 
+            else if (fila == 1 || fila == 2) arreglo_aliens[indice].tipo = 20; 
+            else arreglo_aliens[indice].tipo = 10; 
+            
+            indice++;
+        }
+    }
+
+    // Vinculamos la memoria para que la red actualice la pantalla en segundo plano
+    vincular_punteros_red(arreglo_jugadores, arreglo_aliens, arreglo_bunkers);
+
+    // 3. Inicialización de Red
+    // TODO: Descomentar el siguiente bloque cuando el servidor Java soporte conexiones TCP.
     /*
-    if (!inicializar_conexion()) {
+    if (!inicializar_conexion(cadena_handshake)) {
         printf("[FATAL] Abortando ejecucion por fallo de red.\n");
         return EXIT_FAILURE;
     }
     */
 
-    // 2. Inicialización de la Interfaz Gráfica
+    // 4. Inicialización de la Interfaz Gráfica
     inicializar_gui();
+    int mi_indice_jugador = partida_id - 1; 
 
-    // --- CREACIÓN DE DATOS DUMMY (MAQUETA VISUAL) ---
-    // A reemplazar en la Actividad A5 con los datos que lleguen del servidor Java
-    Jugador jugador_local = {1, ANCHO_PANTALLA / 2, VIDAS_INICIALES, 0};
-
-    Bunker bunkers[CANTIDAD_BUNKERS];
-    int espacio_bunkers = ANCHO_PANTALLA / CANTIDAD_BUNKERS;
-    for (int i = 0; i < CANTIDAD_BUNKERS; i++) {
-        bunkers[i].id = i;
-        bunkers[i].x = (espacio_bunkers * i) + (espacio_bunkers / 4);
-        bunkers[i].y = ALTO_PANTALLA - 150;
-        bunkers[i].porcentaje_salud = 100; 
-    }
-
-    int total_aliens = FILAS_ALIENS * COLUMNAS_ALIENS;
-    Extraterrestre aliens[FILAS_ALIENS * COLUMNAS_ALIENS];
-    int indice = 0;
-    
-    for (int fila = 0; fila < FILAS_ALIENS; fila++) {
-        for (int col = 0; col < COLUMNAS_ALIENS; col++) {
-            aliens[indice].id = indice;
-            aliens[indice].x = 50 + (col * (ANCHO_ALIEN + 15));
-            aliens[indice].y = 80 + (fila * (ALTO_ALIEN + 15));
-            aliens[indice].estado = 1; 
-            
-            if (fila == 0) aliens[indice].tipo = 40; 
-            else if (fila == 1 || fila == 2) aliens[indice].tipo = 20; 
-            else aliens[indice].tipo = 10; 
-            
-            indice++;
-        }
-    }
-    // ------------------------------------------------
-
-    // 3. Ciclo de Vida Principal (Game Loop Gráfico)
+    // 5. Ciclo de Vida Principal (Game Loop Gráfico)
     while (!WindowShouldClose()) {
         
-        // --- SECCIÓN DE ENTRADA (Manejo temporal por teclado) ---
-        // Nota: Esta sección será reemplazada por la lectura UART de la ESP32 (Actividad A7)
-        if (IsKeyDown(KEY_LEFT)) {
-            jugador_local.posicion_x -= 5;
-            if (jugador_local.posicion_x < 0) {
-                jugador_local.posicion_x = 0;
+        // --- SECCIÓN DE ENTRADA (Bloqueada para Espectadores) ---
+        if (opcion_rol != 3) {
+            
+            // TODO: Reemplazar los eventos de teclado (KEY_LEFT/RIGHT/SPACE) 
+            // por la lectura del puerto serial UART de la ESP32/Pico.
+            if (IsKeyDown(KEY_LEFT)) {
+                arreglo_jugadores[mi_indice_jugador].posicion_x -= 5;
+                if (arreglo_jugadores[mi_indice_jugador].posicion_x < 0) {
+                    arreglo_jugadores[mi_indice_jugador].posicion_x = 0;
+                }
             }
-        }
-        if (IsKeyDown(KEY_RIGHT)) {
-            jugador_local.posicion_x += 5;
-            if (jugador_local.posicion_x > (ANCHO_PANTALLA - ANCHO_CANON)) {
-                jugador_local.posicion_x = ANCHO_PANTALLA - ANCHO_CANON;
+            if (IsKeyDown(KEY_RIGHT)) {
+                arreglo_jugadores[mi_indice_jugador].posicion_x += 5;
+                if (arreglo_jugadores[mi_indice_jugador].posicion_x > (ANCHO_PANTALLA - ANCHO_CANON)) {
+                    arreglo_jugadores[mi_indice_jugador].posicion_x = ANCHO_PANTALLA - ANCHO_CANON;
+                }
             }
-        }
-        if (IsKeyPressed(KEY_SPACE)) {
-            // Lógica de disparo temporal
+            if (IsKeyPressed(KEY_SPACE)) {
+                // TODO: Definir y habilitar el string de disparo.
+                // enviar_comando_servidor("DISPARO\n");
+            }
+            
+            // TODO: Habilitar el envío de la nueva posición tras moverse.
+            // char msg_mov[32];
+            // sprintf(msg_mov, "MOVER|%d|%d\n", arreglo_jugadores[mi_indice_jugador].id_jugador, arreglo_jugadores[mi_indice_jugador].posicion_x);
+            // enviar_comando_servidor(msg_mov);
         }
 
         // --- SECCIÓN DE RENDERIZADO ---
         BeginDrawing();
         ClearBackground(BLACK);
         
-        dibujar_hud(jugador_local.puntuacion, jugador_local.vidas);
-        dibujar_jugador(&jugador_local);
-        dibujar_bunkers(bunkers, CANTIDAD_BUNKERS);
-        dibujar_matriz_aliens(aliens, total_aliens);
+        dibujar_hud(arreglo_jugadores[mi_indice_jugador].puntuacion, arreglo_jugadores[mi_indice_jugador].vidas);
+        dibujar_bunkers(arreglo_bunkers, CANTIDAD_BUNKERS);
+        dibujar_matriz_aliens(arreglo_aliens, total_aliens);
+        
+        if (arreglo_jugadores[mi_indice_jugador].vidas > 0) {
+            dibujar_jugador(&arreglo_jugadores[mi_indice_jugador]);
+        }
         
         EndDrawing();
     }
 
-    // 4. Finalización limpia y liberación de memoria/recursos
+    // 6. Finalización limpia
     cerrar_gui();
-    // cerrar_conexion(); // Descomentar cuando se active la red
+    
+    // TODO: Descomentar el cierre de conexión al habilitar Winsock.
+    // cerrar_conexion(); 
+    
     printf("[INFO] Ejecucion finalizada correctamente.\n");
 
     return EXIT_SUCCESS;

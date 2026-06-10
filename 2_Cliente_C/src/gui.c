@@ -94,6 +94,5 @@ void cerrar_gui() {
     UnloadTexture(tex_cangrejo);
     UnloadTexture(tex_calamar);
     UnloadTexture(tex_bunker);
-    
     CloseWindow();
 }

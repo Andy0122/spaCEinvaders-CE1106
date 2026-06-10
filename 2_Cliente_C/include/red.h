@@ -6,11 +6,20 @@
  * @brief Interfaz para el manejo de la comunicación cliente-servidor mediante Sockets.
  */
 
+#include "structs.h"
+
 /**
- * @brief Inicializa la librería Winsock, crea el socket y conecta con el servidor.
- * @return 1 si la conexión fue exitosa, 0 en caso de error crítico.
+ * @brief Vincula los arreglos de memoria gráfica con el hilo de red.
+ * Permite que la función de parseo actualice la pantalla asíncronamente.
  */
-int inicializar_conexion();
+void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker bunkers[]);
+
+/**
+ * @brief Inicializa Winsock2, conecta con Java y lanza el hilo de escucha.
+ * @param handshake Cadena de texto inicial (Ej: "JUGADOR|1\n").
+ * @return 1 si la conexión fue exitosa, 0 en caso de error.
+ */
+int inicializar_conexion(const char* handshake);
 
 /**
  * @brief Envía una cadena de texto (comando) al servidor.
@@ -19,7 +28,7 @@ int inicializar_conexion();
 void enviar_comando_servidor(const char* mensaje);
 
 /**
- * @brief Cierra el socket de forma segura y libera los recursos de red.
+ * @brief Cierra el socket de forma segura.
  */
 void cerrar_conexion();
 
