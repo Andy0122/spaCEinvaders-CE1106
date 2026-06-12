@@ -84,4 +84,8 @@ public class Extraterrestre {
         this.x = x;
         this.y = y;
     }
+    public void mover(int deltaX, int deltaY) {
+        this.x += deltaX;
+        this.y += deltaY;
+    }
 }
