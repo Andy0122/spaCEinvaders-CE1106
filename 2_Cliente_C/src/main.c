@@ -13,6 +13,7 @@
 #include "../include/red.h"
 #include "../include/gui.h"     
 #include "../include/structs.h" 
+#include "../include/control_uart.h"
 
 int main() {
     // 1. Menú Inicial y Selección de Rol
@@ -90,35 +91,65 @@ int main() {
     inicializar_gui();
     int mi_indice_jugador = partida_id - 1; 
 
+    if (opcion_rol == 1) {
+    if (!uart_inicializar(PUERTO_CONTROL)) {
+        printf("[FATAL] No se pudo inicializar el control UART.\n");
+        cerrar_gui();
+        return EXIT_FAILURE;
+    }
+}
+
+
     // 5. Ciclo de Vida Principal (Game Loop Gráfico)
     while (!WindowShouldClose()) {
         
         // --- SECCIÓN DE ENTRADA (Bloqueada para Espectadores) ---
         if (opcion_rol != 3) {
             
-            // TODO: Reemplazar los eventos de teclado (KEY_LEFT/RIGHT/SPACE) 
-            // por la lectura del puerto serial UART de la ESP32/Pico.
-            if (IsKeyDown(KEY_LEFT)) {
-                arreglo_jugadores[mi_indice_jugador].posicion_x -= 5;
-                if (arreglo_jugadores[mi_indice_jugador].posicion_x < 0) {
-                    arreglo_jugadores[mi_indice_jugador].posicion_x = 0;
+            if (opcion_rol == 1) {
+                // Jugador 1: control físico por ESP8266
+                char cmd;
+                while (uart_leer_comando(&cmd)) {
+                    if (cmd == 'L') {
+                        arreglo_jugadores[mi_indice_jugador].posicion_x -= 5;
+                        if (arreglo_jugadores[mi_indice_jugador].posicion_x < 0) {
+                            arreglo_jugadores[mi_indice_jugador].posicion_x = 0;
+                        }
+                    }
+                    else if (cmd == 'R') {
+                        arreglo_jugadores[mi_indice_jugador].posicion_x += 5;
+                        if (arreglo_jugadores[mi_indice_jugador].posicion_x > (ANCHO_PANTALLA - ANCHO_CANON)) {
+                            arreglo_jugadores[mi_indice_jugador].posicion_x = ANCHO_PANTALLA - ANCHO_CANON;
+                        }
+                    }
+                    else if (cmd == 'S') {
+                        printf("[INFO] Disparo recibido por UART\n");
+                        // Aquí luego conectas el disparo con la lógica del juego
+                        // enviar_comando_servidor("DISPARO\n");
+                    }
                 }
             }
-            if (IsKeyDown(KEY_RIGHT)) {
-                arreglo_jugadores[mi_indice_jugador].posicion_x += 5;
-                if (arreglo_jugadores[mi_indice_jugador].posicion_x > (ANCHO_PANTALLA - ANCHO_CANON)) {
-                    arreglo_jugadores[mi_indice_jugador].posicion_x = ANCHO_PANTALLA - ANCHO_CANON;
+            else if (opcion_rol == 2) {
+                // Jugador 2: teclado
+                if (IsKeyDown(KEY_LEFT)) {
+                    arreglo_jugadores[mi_indice_jugador].posicion_x -= 5;
+                    if (arreglo_jugadores[mi_indice_jugador].posicion_x < 0) {
+                        arreglo_jugadores[mi_indice_jugador].posicion_x = 0;
+                    }
+                }
+
+                if (IsKeyDown(KEY_RIGHT)) {
+                    arreglo_jugadores[mi_indice_jugador].posicion_x += 5;
+                    if (arreglo_jugadores[mi_indice_jugador].posicion_x > (ANCHO_PANTALLA - ANCHO_CANON)) {
+                        arreglo_jugadores[mi_indice_jugador].posicion_x = ANCHO_PANTALLA - ANCHO_CANON;
+                    }
+                }
+
+                if (IsKeyPressed(KEY_SPACE)) {
+                    printf("[INFO] Disparo por teclado\n");
+                    // enviar_comando_servidor("DISPARO\n");
                 }
             }
-            if (IsKeyPressed(KEY_SPACE)) {
-                // TODO: Definir y habilitar el string de disparo.
-                // enviar_comando_servidor("DISPARO\n");
-            }
-            
-            // TODO: Habilitar el envío de la nueva posición tras moverse.
-            // char msg_mov[32];
-            // sprintf(msg_mov, "MOVER|%d|%d\n", arreglo_jugadores[mi_indice_jugador].id_jugador, arreglo_jugadores[mi_indice_jugador].posicion_x);
-            // enviar_comando_servidor(msg_mov);
         }
 
         // --- SECCIÓN DE RENDERIZADO ---
@@ -138,6 +169,10 @@ int main() {
 
     // 6. Finalización limpia
     cerrar_gui();
+
+    if (opcion_rol == 1) {
+        uart_cerrar();
+    }
     
     // TODO: Descomentar el cierre de conexión al habilitar Winsock.
     // cerrar_conexion(); 
