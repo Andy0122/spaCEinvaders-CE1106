@@ -1,7 +1,5 @@
 import java.io.IOException;
 import java.net.Socket;
-
-import modelo.Juego;
 import red.HiloCliente;
 import red.ManejadorSockets;
 
@@ -12,11 +10,10 @@ import red.ManejadorSockets;
  */
 public class MainServidor {
 
-    private static final int PUERTO = 5000;
+    private static final int PUERTO = 8080;
 
     public static void main(String[] args) {
         System.out.println("[INFO] Iniciando Servidor spaCEinvaders en el puerto " + PUERTO + "...");
-        Juego.getInstancia().iniciarJuego();
 
         ManejadorSockets manejador = new ManejadorSockets(PUERTO);
         try {

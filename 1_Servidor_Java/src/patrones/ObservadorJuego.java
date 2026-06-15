@@ -3,69 +3,82 @@ package patrones;
 import red.DespachadorMensajes;
 
 /**
- * Centraliza todas las notificaciones broadcast del juego.
+ * Patrón Observer: Centraliza todas las notificaciones broadcast del juego.
+ * Ha sido adaptado para soportar múltiples partidas (Salas de Juego) simultáneas.
  *
- * Formato de mensajes de salida (especificado en §4):
- *   ALIEN|id|x|y|estado        (estado: 1=vivo, 0=destruido)
- *   JUGADOR|id|x|vidas|puntos
- *   BUNKER|id|salud
- *   OVNI|id|x|y|velocidad|puntosExtra
- *   DISPARO|JUGADOR|x|y
- *   VELOCIDAD_ENEMIGOS|valor
+ * Formato de mensajes de salida que espera el cliente en C (A5):
+ * ALIEN|id|x|y|estado        (estado: 1=vivo, 0=destruido)
+ * JUGADOR|id|x|vidas|puntos
+ * BUNKER|id|salud
  */
 public class ObservadorJuego {
 
-    /** Informa la nueva posición del jugador. */
-    public static void notificarJugadorMovido(int id, int x, int vidas, int puntos) {
-        DespachadorMensajes.broadcast("JUGADOR|" + id + "|" + x + "|" + vidas + "|" + puntos);
+    // ==========================================
+    // NOTIFICACIONES DE EXTRATERRESTRES
+    // ==========================================
+
+    public static void notificarCreacionAlien(int idPartida, int idAlien, int tipo, int x, int y, int velocidad) {
+        // Para el cliente en C, lo importante es la posición inicial y que está vivo (estado 1)
+        String msj = "ALIEN|" + idAlien + "|" + x + "|" + y + "|1";
+        DespachadorMensajes.broadcast(idPartida, msj);
     }
 
-    /** Informa la posición actualizada de un enemigo (alien u ovni). */
-    public static void notificarMovimientoEnemigo(int id, int x, int y, int estado) {
-        DespachadorMensajes.broadcast("ALIEN|" + id + "|" + x + "|" + y + "|" + estado);
+    public static void notificarMovimientoEnemigo(int idPartida, int idEnemigo, int x, int y, int estado) {
+        String msj = "ALIEN|" + idEnemigo + "|" + x + "|" + y + "|" + estado;
+        DespachadorMensajes.broadcast(idPartida, msj);
     }
 
-    /** Informa que el jugador disparó. */
-    public static void notificarDisparoJugador(int x, int y) {
-        DespachadorMensajes.broadcast("DISPARO|JUGADOR|" + x + "|" + y);
+    public static void notificarEnemigoDestruido(int idPartida, int idAlien, int puntosOtorgados, int puntuacionTotal) {
+        // Al enviar estado = 0 o coordenadas en 0, el cliente C sabe que debe ocultarlo/borrarlo
+        String msj = "ALIEN|" + idAlien + "|0|0|0";
+        DespachadorMensajes.broadcast(idPartida, msj);
     }
 
-    /** Informa la creación de un alien (estado=1: vivo). */
-    public static void notificarCreacionAlien(int id, int tipo, int x, int y, int velocidad) {
-        DespachadorMensajes.broadcast("ALIEN|" + id + "|" + x + "|" + y + "|1");
+    public static void notificarVelocidadEnemigos(int idPartida, int velocidad) {
+        // Comando futuro para el motor
+        String msj = "VELOCIDAD|" + velocidad;
+        DespachadorMensajes.broadcast(idPartida, msj);
     }
 
-    /** Informa la creación de un ovni. */
-    public static void notificarCreacionOvni(int id, int x, int y, int velocidad, int puntosExtra) {
-        DespachadorMensajes.broadcast("OVNI|" + id + "|" + x + "|" + y + "|" + velocidad + "|" + puntosExtra);
+    // ==========================================
+    // NOTIFICACIONES DEL OVNI ALEATORIO
+    // ==========================================
+
+    public static void notificarCreacionOvni(int idPartida, int idOvni, int x, int y, int velocidad, int puntos) {
+        String msj = "OVNI|" + idOvni + "|" + x + "|" + y + "|" + velocidad + "|" + puntos;
+        DespachadorMensajes.broadcast(idPartida, msj);
     }
 
-    /**
-     * Informa que un alien fue destruido (estado=0).
-     * También difunde la puntuación actualizada del jugador.
-     */
-    public static void notificarEnemigoDestruido(int id, int puntos, int puntuacionActual) {
-        // Estado 0 = destruido, posición 0,0 indica que ya no existe en el tablero
-        DespachadorMensajes.broadcast("ALIEN|" + id + "|0|0|0");
+    // ==========================================
+    // NOTIFICACIONES DEL JUGADOR
+    // ==========================================
+
+    public static void notificarJugadorMovido(int idPartida, int idJugador, int x, int vidas, int puntos) {
+        String msj = "JUGADOR|" + idJugador + "|" + x + "|" + vidas + "|" + puntos;
+        DespachadorMensajes.broadcast(idPartida, msj);
     }
 
-    /** Informa que el jugador recibió un impacto (vidas restantes). */
-    public static void notificarImpactoJugador(int vidas) {
-        DespachadorMensajes.broadcast("IMPACTO_JUGADOR|" + vidas);
+    public static void notificarVidasJugador(int idPartida, int idJugador, int x, int vidas, int puntos) {
+        String msj = "JUGADOR|" + idJugador + "|" + x + "|" + vidas + "|" + puntos;
+        DespachadorMensajes.broadcast(idPartida, msj);
     }
 
-    /** Informa las vidas y puntos actuales del jugador. */
-    public static void notificarVidasJugador(int id, int x, int vidas, int puntos) {
-        DespachadorMensajes.broadcast("JUGADOR|" + id + "|" + x + "|" + vidas + "|" + puntos);
+    public static void notificarImpactoJugador(int idPartida, int vidasRestantes) {
+        String msj = "IMPACTO_JUGADOR|" + vidasRestantes;
+        DespachadorMensajes.broadcast(idPartida, msj);
     }
 
-    /** Informa el estado de salud de un bunker. */
-    public static void notificarBunkerActualizado(int id, int salud) {
-        DespachadorMensajes.broadcast("BUNKER|" + id + "|" + salud);
+    public static void notificarDisparoJugador(int idPartida, int x, int y) {
+        String msj = "DISPARO|" + x + "|" + y;
+        DespachadorMensajes.broadcast(idPartida, msj);
     }
 
-    /** Informa la velocidad actual de los enemigos. */
-    public static void notificarVelocidadEnemigos(int velocidad) {
-        DespachadorMensajes.broadcast("VELOCIDAD_ENEMIGOS|" + velocidad);
+    // ==========================================
+    // NOTIFICACIONES DE BUNKERS (ESCUDOS)
+    // ==========================================
+
+    public static void notificarBunkerActualizado(int idPartida, int idBunker, int salud) {
+        String msj = "BUNKER|" + idBunker + "|" + salud;
+        DespachadorMensajes.broadcast(idPartida, msj);
     }
 }

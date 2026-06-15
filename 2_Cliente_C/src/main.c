@@ -80,12 +80,12 @@ int main() {
 
     // 3. Inicialización de Red
     // TODO: Descomentar el siguiente bloque cuando el servidor Java soporte conexiones TCP.
-    /*
+    
     if (!inicializar_conexion(cadena_handshake)) {
         printf("[FATAL] Abortando ejecucion por fallo de red.\n");
         return EXIT_FAILURE;
     }
-    */
+    
 
     // 4. Inicialización de la Interfaz Gráfica
     inicializar_gui();
@@ -175,7 +175,7 @@ int main() {
     }
     
     // TODO: Descomentar el cierre de conexión al habilitar Winsock.
-    // cerrar_conexion(); 
+    cerrar_conexion(); 
     
     printf("[INFO] Ejecucion finalizada correctamente.\n");
 
