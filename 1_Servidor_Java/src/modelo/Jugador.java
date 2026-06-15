@@ -4,6 +4,8 @@
  * Contiene atributos de posición, vidas y velocidad, así como métodos para
  * mover el cañón, disparar balas y recibir impactos. La clase también incluye
  */
+package modelo;
+
 public class Jugador {
     private int x; // posición horizontal
     private int y; // posición vertical
@@ -46,6 +48,13 @@ public class Jugador {
     }
 
     public boolean estaVivo() { return vidas > 0; }
+
+    public void agregarVida(int cantidad) {
+        this.vidas += cantidad;
+        if (this.vidas < 0) {
+            this.vidas = 0;
+        }
+    }
 
     // Clase interna simple para representar una bala del jugador
     public static class Bala {

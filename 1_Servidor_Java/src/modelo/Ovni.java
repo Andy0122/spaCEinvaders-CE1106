@@ -1,4 +1,6 @@
 
+package modelo;
+
 /* 
     * Clase que representa a un ovni en el juego Space Invaders. 
     * El ovni tiene una posición, velocidad y puntos extra.
@@ -7,20 +9,30 @@
 import java.util.Random;
 
 public class Ovni {
+    private static int siguienteId = 1;
+
+    private final int id;
     private int x;
     private int y;
     private int velocidad;
+    private int direccion;
     private int puntosExtra;
     private Random random;
     private static final int PUNTOS_MIN = 50;
     private static final int PUNTOS_MAX = 500;
 
-    public Ovni(int x, int y, int velocidad) {
+    public Ovni(int x, int y, int velocidad, int puntosExtra) {
+        this(x, y, velocidad, puntosExtra, 1);
+    }
+
+    public Ovni(int x, int y, int velocidad, int puntosExtra, int direccion) {
+        this.id = siguienteId++;
         this.x = x;
         this.y = y;
         this.velocidad = velocidad;
+        this.direccion = Math.signum(direccion) == 0 ? 1 : direccion;
         this.random = new Random();
-        this.puntosExtra = generarPuntosAleatorios();
+        this.puntosExtra = puntosExtra;
     }
 
     private int generarPuntosAleatorios() {
@@ -28,7 +40,15 @@ public class Ovni {
     }
 
     public void mover() {
-        x += velocidad;
+        x += velocidad * direccion;
+    }
+
+    public int getDireccion() {
+        return direccion;
+    }
+
+    public void setDireccion(int direccion) {
+        this.direccion = Math.signum(direccion) == 0 ? 1 : direccion;
     }
 
     public int getX() {
@@ -61,5 +81,9 @@ public class Ovni {
 
     public void setPuntosExtra(int puntosExtra) {
         this.puntosExtra = puntosExtra;
+    }
+
+    public int getId() {
+        return id;
     }
 }

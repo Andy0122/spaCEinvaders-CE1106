@@ -1,91 +1,82 @@
 /* 
  * Clase que representa a un extraterrestre en el juego Space Invaders. 
- * Cada extraterrestre tiene un tipo, posición, vida, puntos y velocidad.
- * El tipo determina la cantidad de vida y puntos que otorga al ser destruido.
- * La clase incluye métodos para recibir impactos, verificar si el extraterrestre está destruido y
-    
-*/
-public class Extraterrestre {
+ * Tipos:
+ *   1 = Calamar  → 10 pts
+ *   2 = Cangrejo → 20 pts
+ *   3 = Pulpo    → 40 pts
+ */
+package modelo;
+
+public class Extraterrestre implements Enemigo {
+    private static int siguienteId = 1;
+
+    private final int id;
     private int x;
     private int y;
     private int tipo;
     private int vida;
     private int puntos;
     private int velocidad;
-    
+
+    /**
+     * Constructor único. Recibe el tipo (1, 2 o 3) y la posición inicial.
+     * FabricaEnemigos es responsable de deducir el tipo antes de llamar aquí.
+     */
     public Extraterrestre(int tipo, int x, int y) {
+        this.id = siguienteId++;
         this.tipo = tipo;
         this.vida = calcularVida(tipo);
         this.puntos = calcularPuntos(tipo);
+        this.velocidad = calcularVelocidad(tipo);
         this.x = x;
         this.y = y;
     }
 
     private int calcularVida(int tipo) {
-     switch (tipo) {
-            case 1:
-                return 10; // Vida base para tipo 1
-            case 2:
-                return 20; // Vida base para tipo 2
-            case 3:
-                return 30; // Vida base para tipo 3
+        switch (tipo) {
+            case 1: return 10;
+            case 2: return 20;
+            case 3: return 30;
+            default: return 10;
         }
-     return tipo;
     }
 
     private int calcularPuntos(int tipo) {
         switch (tipo) {
-
-            case 1:
-                return 10;
-            case 2:
-                return 20;
-            case 3:
-                return 40;
-            default:
-                return 0;
+            case 1: return 10;   // Calamar
+            case 2: return 20;   // Cangrejo
+            case 3: return 40;   // Pulpo
+            default: return 10;
         }
     }
 
-    public int getTipo() {
-        return tipo;
+    private int calcularVelocidad(int tipo) {
+        switch (tipo) {
+            case 1: return 2;
+            case 2: return 3;
+            case 3: return 4;
+            default: return 2;
+        }
     }
 
-    public int getVida() {
-        return vida;
-    }
+    @Override public int getId()        { return id; }
+    @Override public int getTipo()      { return tipo; }
+    @Override public int getVida()      { return vida; }
+    @Override public int getPuntos()    { return puntos; }
+    @Override public int getVelocidad() { return velocidad; }
+    @Override public int getPosicionX() { return x; }
+    @Override public int getPosicionY() { return y; }
 
-    public int getPuntos() {
-        return puntos;
-    }
-
-    public boolean estaDestruido() {
-        return vida == 0;
-    }
+    @Override public void setVelocidad(int velocidad)      { this.velocidad = velocidad; }
+    @Override public void setPosicion(int x, int y)        { this.x = x; this.y = y; }
+    @Override public void mover(int deltaX, int deltaY)    { this.x += deltaX; this.y += deltaY; }
+    @Override public boolean estaDestruido()               { return vida <= 0; }
 
     public boolean recibirImpacto() {
         if (vida > 0) {
-            vida -= 10; // Cada impacto reduce la vida en 10 puntos
-            if (vida < 0) {
-                vida = 0; 
-            }
+            vida -= 10;
+            if (vida < 0) vida = 0;
         }
         return estaDestruido();
-    }
-
-    public int getPosicionX() {
-        return x;
-    }
-
-    public int getPosicionY() {
-        return y;
-    }
-    public void setPosicion(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
-    public void mover(int deltaX, int deltaY) {
-        this.x += deltaX;
-        this.y += deltaY;
     }
 }
