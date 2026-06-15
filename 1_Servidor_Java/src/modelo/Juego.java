@@ -194,7 +194,7 @@ public class Juego {
                 if (partes.length != 3) return "ERROR|ADMIN|SET_JUGADOR_VIDAS|vidas";
                 int vidas = Integer.parseInt(partes[2]);
                 jugador.agregarVida(vidas - jugador.getVidas());
-                ObservadorJuego.notificarVidasJugador(this.idPartida, 0, jugador.getX(), jugador.getVidas(), puntuacion);
+                ObservadorJuego.notificarVidasJugador(this.idPartida, this.idPartida, jugador.getX(), jugador.getVidas(), puntuacion);
                 return "OK|VIDAS_JUGADOR_ACTUALIZADAS|" + jugador.getVidas();
             }
 
@@ -222,14 +222,14 @@ public class Juego {
 
             case "MOVER_IZQ": {
                 jugador.moverIzquierda();
-                ObservadorJuego.notificarJugadorMovido(this.idPartida, 0, jugador.getX(), jugador.getVidas(), puntuacion);
+                ObservadorJuego.notificarJugadorMovido(this.idPartida, this.idPartida, jugador.getX(), jugador.getVidas(), puntuacion);
                 return "OK|JUGADOR_MOVIDO|IZQ|" + jugador.getX();
             }
 
             case "MOVER_DER": {
-                int limite = partes.length == 3 ? Integer.parseInt(partes[2]) : 500;
+                int limite = partes.length == 3 ? Integer.parseInt(partes[2]) : 760;
                 jugador.moverDerecha(limite);
-                ObservadorJuego.notificarJugadorMovido(this.idPartida, 0, jugador.getX(), jugador.getVidas(), puntuacion);
+                ObservadorJuego.notificarJugadorMovido(this.idPartida, this.idPartida, jugador.getX(), jugador.getVidas(), puntuacion);
                 return "OK|JUGADOR_MOVIDO|DER|" + jugador.getX();
             }
 
@@ -242,7 +242,7 @@ public class Juego {
                 // El jugador recibió una bala enemiga → pierde una vida
                 jugador.recibirImpacto();
                 ObservadorJuego.notificarImpactoJugador(this.idPartida, jugador.getVidas());
-                ObservadorJuego.notificarVidasJugador(this.idPartida, 0, jugador.getX(), jugador.getVidas(), puntuacion);
+                ObservadorJuego.notificarVidasJugador(this.idPartida, this.idPartida, jugador.getX(), jugador.getVidas(), puntuacion);
                 return "OK|VIDAS|" + jugador.getVidas();
             }
 
@@ -296,7 +296,7 @@ public class Juego {
         puntuacion += alien.getPuntos();
         // Broadcast con estado=0 para indicar destrucción
         ObservadorJuego.notificarEnemigoDestruido(this.idPartida, idAlien, alien.getPuntos(), puntuacion);
-        ObservadorJuego.notificarVidasJugador(this.idPartida, 0, jugador.getX(), jugador.getVidas(), puntuacion);
+        ObservadorJuego.notificarVidasJugador(this.idPartida, this.idPartida, jugador.getX(), jugador.getVidas(), puntuacion);
 
         verificarOlaCompleta();
         return "OK|ALIEN_DESTRUIDO|" + idAlien + "|PUNTOS|" + puntuacion;
@@ -308,7 +308,7 @@ public class Juego {
             jugador.agregarVida(1);
             velocidadBaseExtraterrestres += INCREMENTO_VELOCIDAD;
             crearOlaInicial();
-            ObservadorJuego.notificarVidasJugador(this.idPartida, 0, jugador.getX(), jugador.getVidas(), puntuacion);
+            ObservadorJuego.notificarVidasJugador(this.idPartida, this.idPartida, jugador.getX(), jugador.getVidas(), puntuacion);
         }
     }
 

@@ -41,14 +41,26 @@ public class HiloCliente implements Runnable {
             String rol = datosHandshake[0].trim();
             int idPartida = Integer.parseInt(datosHandshake[1].trim());
 
+            Juego miPartida;
+
+            if (rol.equals("ESPECTADOR")) {
+                // Si la partida no existe, bloqueamos el acceso
+                if (!GestorPartidas.existePartida(idPartida)) {
+                    System.out.println("[ALERTA] Espectador intentó unirse a sala inexistente: " + idPartida);
+                    flujoSalida.println("ERROR|La partida no existe");
+                    return; // Termina el hilo inmediatamente y lo desconecta
+                }
+                miPartida = GestorPartidas.obtenerPartidaExistente(idPartida);
+            } else {
+                // Si es JUGADOR, obtiene la partida o la crea si no existe
+                miPartida = GestorPartidas.obtenerOCrearPartida(idPartida);
+            }
+
             // 2. Registrar en la sala correcta
             DespachadorMensajes.registrar(idPartida, flujoSalida);
-            
-            // 3. Obtener el Motor de Juego de esa sala
-            Juego miPartida = GestorPartidas.obtenerOCrearPartida(idPartida);
             System.out.println("[CONEXION] Nuevo " + rol + " conectado a Sala " + idPartida);
 
-            // 4. Ciclo de escucha de comandos (Las pulsaciones de teclas/ESP8266)
+            // 3. Ciclo de escucha de comandos (Las pulsaciones de teclas/ESP8266)
             String mensaje;
             while ((mensaje = flujoEntrada.readLine()) != null) {
                 // El espectador NO puede mandar comandos al motor

@@ -57,7 +57,11 @@ static void parsear_mensaje(const char* mensaje) {
     } 
     else if (strcmp(tipo, "JUGADOR") == 0) {
         int id, x, vidas, puntos;
+        // Java envia: JUGADOR|id|x|vidas|puntos
         if (sscanf(mensaje, "JUGADOR|%d|%d|%d|%d", &id, &x, &vidas, &puntos) == 4) {
+            // Depuracion visual en consola
+            printf("[RED] Actualizando en tiempo real -> JUGADOR ID: %d, X: %d\n", id, x);
+            
             for (int i = 0; i < 2; i++) { 
                 if (ptr_jugadores[i].id_jugador == id) {
                     ptr_jugadores[i].posicion_x = x;
@@ -100,7 +104,7 @@ static DWORD WINAPI escuchar_servidor(LPVOID lpParam) {
             // TODO: Java debe enviar "IDENTIFICATE\n" apenas acepte la conexión.
             if (strncmp(token_linea, "IDENTIFICATE", 12) == 0) {
                 enviar_comando_servidor(mensaje_handshake);
-                printf("[PROTOCOLO] Identidad enviada: %s\n", mensaje_handshake);
+                printf("[PROTOCOLO] Identidad enviada al Servidor: %s", mensaje_handshake);
             } else {
                 parsear_mensaje(token_linea);
             }

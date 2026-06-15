@@ -17,4 +17,18 @@ public class GestorPartidas {
             return nuevoJuego;
         });
     }
+
+    /**
+     * Verifica si una partida ya existe en memoria.
+     */
+    public static boolean existePartida(int idPartida) {
+        return partidas.containsKey(idPartida);
+    }
+
+    /**
+     * Obtiene la partida existente sin crearla. Devuelve null si no existe.
+     */
+    public static Juego obtenerPartidaExistente(int idPartida) {
+        return partidas.get(idPartida);
+    }
 }

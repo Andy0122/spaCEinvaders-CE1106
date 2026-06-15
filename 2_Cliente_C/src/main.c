@@ -79,26 +79,20 @@ int main() {
     vincular_punteros_red(arreglo_jugadores, arreglo_aliens, arreglo_bunkers);
 
     // 3. Inicialización de Red
-    // TODO: Descomentar el siguiente bloque cuando el servidor Java soporte conexiones TCP.
-    
     if (!inicializar_conexion(cadena_handshake)) {
         printf("[FATAL] Abortando ejecucion por fallo de red.\n");
         return EXIT_FAILURE;
     }
-    
 
     // 4. Inicialización de la Interfaz Gráfica
     inicializar_gui();
     int mi_indice_jugador = partida_id - 1; 
 
     if (opcion_rol == 1) {
-    if (!uart_inicializar(PUERTO_CONTROL)) {
-        printf("[FATAL] No se pudo inicializar el control UART.\n");
-        cerrar_gui();
-        return EXIT_FAILURE;
+        if (!uart_inicializar(PUERTO_CONTROL)) {
+            printf("[ADVERTENCIA] ESP8266 no detectada. El Jugador 1 NO podra moverse hasta que se conecte el hardware.\n");
+        }
     }
-}
-
 
     // 5. Ciclo de Vida Principal (Game Loop Gráfico)
     while (!WindowShouldClose()) {
@@ -107,28 +101,27 @@ int main() {
         if (opcion_rol != 3) {
             
             if (opcion_rol == 1) {
-                // Jugador 1: control físico por ESP8266
+                // Jugador 1: control físico por ESP8266 
                 char cmd;
                 while (uart_leer_comando(&cmd)) {
                     if (cmd == 'L') {
                         arreglo_jugadores[mi_indice_jugador].posicion_x -= 5;
-                        if (arreglo_jugadores[mi_indice_jugador].posicion_x < 0) {
-                            arreglo_jugadores[mi_indice_jugador].posicion_x = 0;
-                        }
+                        if (arreglo_jugadores[mi_indice_jugador].posicion_x < 0) arreglo_jugadores[mi_indice_jugador].posicion_x = 0;
+                        enviar_comando_servidor("JUGADOR|MOVER_IZQ\n");
                     }
                     else if (cmd == 'R') {
                         arreglo_jugadores[mi_indice_jugador].posicion_x += 5;
-                        if (arreglo_jugadores[mi_indice_jugador].posicion_x > (ANCHO_PANTALLA - ANCHO_CANON)) {
-                            arreglo_jugadores[mi_indice_jugador].posicion_x = ANCHO_PANTALLA - ANCHO_CANON;
-                        }
+                        if (arreglo_jugadores[mi_indice_jugador].posicion_x > (ANCHO_PANTALLA - ANCHO_CANON)) arreglo_jugadores[mi_indice_jugador].posicion_x = ANCHO_PANTALLA - ANCHO_CANON;
+                        enviar_comando_servidor("JUGADOR|MOVER_DER\n");
                     }
                     else if (cmd == 'S') {
                         printf("[INFO] Disparo recibido por UART\n");
-                        // Aquí luego conectas el disparo con la lógica del juego
-                        // enviar_comando_servidor("DISPARO\n");
+                        // Aquí luego se conecta el disparo con la lógica del juego
+                        enviar_comando_servidor("JUGADOR|DISPARAR\n");
                     }
                 }
             }
+
             else if (opcion_rol == 2) {
                 // Jugador 2: teclado
                 if (IsKeyDown(KEY_LEFT)) {
@@ -136,6 +129,7 @@ int main() {
                     if (arreglo_jugadores[mi_indice_jugador].posicion_x < 0) {
                         arreglo_jugadores[mi_indice_jugador].posicion_x = 0;
                     }
+                    enviar_comando_servidor("JUGADOR|MOVER_IZQ\n");
                 }
 
                 if (IsKeyDown(KEY_RIGHT)) {
@@ -143,11 +137,13 @@ int main() {
                     if (arreglo_jugadores[mi_indice_jugador].posicion_x > (ANCHO_PANTALLA - ANCHO_CANON)) {
                         arreglo_jugadores[mi_indice_jugador].posicion_x = ANCHO_PANTALLA - ANCHO_CANON;
                     }
+                    enviar_comando_servidor("JUGADOR|MOVER_DER\n");
                 }
 
                 if (IsKeyPressed(KEY_SPACE)) {
                     printf("[INFO] Disparo por teclado\n");
-                    // enviar_comando_servidor("DISPARO\n");
+                    // Aquí luego se conecta el disparo con la lógica del juego
+                    enviar_comando_servidor("JUGADOR|DISPARAR\n");
                 }
             }
         }
@@ -174,7 +170,6 @@ int main() {
         uart_cerrar();
     }
     
-    // TODO: Descomentar el cierre de conexión al habilitar Winsock.
     cerrar_conexion(); 
     
     printf("[INFO] Ejecucion finalizada correctamente.\n");
