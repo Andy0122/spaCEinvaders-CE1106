@@ -5,6 +5,7 @@
 
 #include "../include/gui.h"
 #include "../include/constantes.h"
+#include "../include/structs.h"
 #include "raylib.h"
 #include "stdlib.h"
 
@@ -33,7 +34,7 @@ void inicializar_gui() {
     ImageResize(&img_pulpo, ANCHO_ALIEN, ALTO_ALIEN);
     ImageResize(&img_cangrejo, ANCHO_ALIEN, ALTO_ALIEN);
     ImageResize(&img_calamar, ANCHO_ALIEN, ALTO_ALIEN);
-    ImageResize(&img_bunker, 60, 40); 
+    ImageResize(&img_bunker, 60, 40);
     ImageResize(&img_ovni, ANCHO_ALIEN * 2, ALTO_ALIEN * 1);
 
     // Convierte las imágenes modificadas a texturas para la VRAM
@@ -70,7 +71,6 @@ void dibujar_bunkers(Bunker bunkers[], int cantidad) {
             Color tinte_bunker = GREEN;
             if (bunkers[i].porcentaje_salud <= 70) tinte_bunker = YELLOW;
             if (bunkers[i].porcentaje_salud <= 40) tinte_bunker = RED;
-
             DrawTexture(tex_bunker, bunkers[i].x, bunkers[i].y, tinte_bunker);
         }
     }
@@ -78,7 +78,7 @@ void dibujar_bunkers(Bunker bunkers[], int cantidad) {
 
 void dibujar_matriz_aliens(Extraterrestre aliens[], int total_aliens) {
     for (int i = 0; i < total_aliens; i++) {
-        if (aliens[i].estado == 1) { 
+        if (aliens[i].estado == 1) {
             if (aliens[i].tipo == 40) DrawTexture(tex_pulpo, aliens[i].x, aliens[i].y, WHITE);
             else if (aliens[i].tipo == 20) DrawTexture(tex_cangrejo, aliens[i].x, aliens[i].y, WHITE);
             else if (aliens[i].tipo == 10) DrawTexture(tex_calamar, aliens[i].x, aliens[i].y, WHITE);
@@ -95,6 +95,19 @@ void dibujar_ovni(Ovni *o) {
     }
 }
 
+/**
+ * @brief Recorre la lista enlazada de balas y dibuja cada una.
+ * Cada bala se representa como un rectángulo blanco delgado (4x12 px)
+ * centrado horizontalmente en su posición x.
+ */
+void dibujar_balas(ListaBala* lista) {
+    NodoBala* actual = lista->cabeza;
+    while (actual != NULL) {
+        DrawRectangle(actual->x - 2, actual->y, 4, 12, YELLOW);
+        actual = actual->siguiente;
+    }
+}
+
 void cerrar_gui() {
     // Liberar la memoria de la tarjeta de video antes de cerrar el programa
     UnloadTexture(tex_jugador);
@@ -102,6 +115,6 @@ void cerrar_gui() {
     UnloadTexture(tex_cangrejo);
     UnloadTexture(tex_calamar);
     UnloadTexture(tex_bunker);
-    UnloadTexture(tex_ovni); 
+    UnloadTexture(tex_ovni);
     CloseWindow();
 }

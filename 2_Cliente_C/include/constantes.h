@@ -44,4 +44,10 @@
 #define CANTIDAD_BUNKERS 4
 #define VIDAS_INICIALES 3
 
+/* ==========================================
+ * Constantes de la Lista Enlazada / Balas
+ * ========================================== */
+#define VELOCIDAD_BALA 8    /**< Píxeles por frame que avanza la bala del jugador */
+#define MAX_ALIENS 128  /**< Máximo de aliens simultáneos registrables */
+
 #endif // CONSTANTES_H

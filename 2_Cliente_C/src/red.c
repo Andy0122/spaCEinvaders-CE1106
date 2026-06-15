@@ -1,6 +1,6 @@
 /**
  * @file red.c
- * @brief Implementación de las rutinas de comunicación y PARSEO (Actividad A5).
+ * @brief Implementación de las rutinas de comunicación y parseo de mensajes del servidor.
  */
 
 #include <stdio.h>
@@ -31,43 +31,64 @@ void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker 
 }
 
 /**
- * @brief Desarma los mensajes de Java y actualiza los structs locales.
- * @param mensaje Línea de texto recibida por el socket.
- * * TODO: El servidor Java debe enviar strings con este formato exacto:
- * - ALIEN|id|x|y|estado\n
- * - JUGADOR|id|x|vidas|puntos\n
- * - BUNKER|id|salud\n
- * - OVNI|id|x|y|velocidad|puntosExtra\n (o estado si son 4 parámetros)
+ * @brief Busca el índice de un alien por su id en el arreglo local.
+ *        Si el id no existe, devuelve el primer slot libre (id == -1).
+ *        Si no hay slots libres, devuelve -1 para ignorar el mensaje.
+ */
+static int buscar_o_reservar_slot_alien(int id) {
+    int slot_libre = -1;
+    for (int i = 0; i < MAX_ALIENS; i++) {
+        if (ptr_aliens[i].id == id) {
+            return i; // Encontrado
+        }
+        if (ptr_aliens[i].id == -1 && slot_libre == -1) {
+            slot_libre = i; // Primer hueco disponible
+        }
+    }
+    // No encontrado: asignamos el primer slot libre
+    if (slot_libre != -1) {
+        ptr_aliens[slot_libre].id = id;
+    }
+    return slot_libre;
+}
+
+/**
+ * @brief Parsea una línea de texto recibida del servidor y actualiza los structs locales.
+ *
+ * Formatos esperados:
+ *   ALIEN|id|x|y|estado          (estado 1=vivo, 0=destruido)
+ *   JUGADOR|id|x|vidas|puntos
+ *   BUNKER|id|salud
+ *   OVNI|id|x|y|velocidad|puntos
+ *   VELOCIDAD|valor               (informativo, no modifica estado local)
+ *   IMPACTO_JUGADOR|vidas         (feedback de impacto, se actualiza via JUGADOR tb)
  */
 static void parsear_mensaje(const char* mensaje) {
     char tipo[16];
-    
     if (sscanf(mensaje, "%15[^|]", tipo) != 1) return;
 
+    /* ------ ALIEN ------ */
     if (strcmp(tipo, "ALIEN") == 0) {
         int id, x, y, estado;
         if (sscanf(mensaje, "ALIEN|%d|%d|%d|%d", &id, &x, &y, &estado) == 4) {
-            int total_aliens = FILAS_ALIENS * COLUMNAS_ALIENS;
-            for (int i = 0; i < total_aliens; i++) {
-                if (ptr_aliens[i].id == id) {
-                    ptr_aliens[i].x = x;
-                    ptr_aliens[i].y = y;
-                    ptr_aliens[i].estado = estado;
-                    break;
-                }
+            int idx = buscar_o_reservar_slot_alien(id);
+            if (idx != -1) {
+                ptr_aliens[idx].x = x;
+                ptr_aliens[idx].y = y;
+                ptr_aliens[idx].estado = estado;
             }
         }
-    } 
+    }
+
+    /* ------ JUGADOR ------ */
     else if (strcmp(tipo, "JUGADOR") == 0) {
         int id, x, vidas, puntos;
-        // Java envia: JUGADOR|id|x|vidas|puntos
         if (sscanf(mensaje, "JUGADOR|%d|%d|%d|%d", &id, &x, &vidas, &puntos) == 4) {
-            // Depuracion visual en consola
-            printf("[RED] Actualizando en tiempo real -> JUGADOR ID: %d, X: %d\n", id, x);
-
-            for (int i = 0; i < 2; i++) { 
+            for (int i = 0; i < 2; i++) {
                 if (ptr_jugadores[i].id_jugador == id) {
-                    ptr_jugadores[i].posicion_x = x;
+                    if (abs(ptr_jugadores[i].posicion_x - x) > 10) {
+                        ptr_jugadores[i].posicion_x = x;
+                    }
                     ptr_jugadores[i].vidas = vidas;
                     ptr_jugadores[i].puntuacion = puntos;
                     break;
@@ -75,6 +96,8 @@ static void parsear_mensaje(const char* mensaje) {
             }
         }
     }
+
+    /* ------ BUNKER ------ */
     else if (strcmp(tipo, "BUNKER") == 0) {
         int id, salud;
         if (sscanf(mensaje, "BUNKER|%d|%d", &id, &salud) == 2) {
@@ -86,32 +109,48 @@ static void parsear_mensaje(const char* mensaje) {
             }
         }
     }
-    // LÓGICA DE PARSEO DEL OVNI (Integración con el motor de Java)
+
+    /* ------ OVNI ------ */
     else if (strcmp(tipo, "OVNI") == 0) {
         int id, x, y, p4, p5;
         // Lee hasta 5 parámetros (dependiendo si es evento de creación o movimiento)
         int leidos = sscanf(mensaje, "OVNI|%d|%d|%d|%d|%d", &id, &x, &y, &p4, &p5);
-        
         if (leidos >= 4 && ptr_ovni != NULL) {
             ptr_ovni->id = id;
             ptr_ovni->x = x;
             ptr_ovni->y = y;
-            
+
             // Si llegan 5 datos, asumimos que es el evento inicial de CREACIÓN
             if (leidos == 5) {
                 ptr_ovni->velocidad = p4;
                 ptr_ovni->puntosExtra = p5;
                 ptr_ovni->activo = 1; // Lo encendemos para renderizarlo
-            } 
-            // Si llegan 4 datos, es un evento de MOVIMIENTO donde p4 es el estado (activo/inactivo)
-            else if (leidos == 4) {
-                ptr_ovni->activo = p4; 
+            } else {
+                // Evento de movimiento: p4 es el estado activo/inactivo
+                ptr_ovni->activo = p4;
             }
-            
+
             // Apagar por seguridad si sale muy lejos de los márgenes de la pantalla
             if (ptr_ovni->x > ANCHO_PANTALLA + 100 || ptr_ovni->x < -100) {
                 ptr_ovni->activo = 0;
             }
+        }
+    }
+
+    /* ------ VELOCIDAD (informativo) ------ */
+    else if (strcmp(tipo, "VELOCIDAD") == 0) {
+        int vel;
+        if (sscanf(mensaje, "VELOCIDAD|%d", &vel) == 1) {
+            printf("[RED] Velocidad de aliens actualizada: %d\n", vel);
+        }
+    }
+
+    /* ------ IMPACTO_JUGADOR (el servidor confirmará via JUGADOR|id|...) ------ */
+    else if (strcmp(tipo, "IMPACTO_JUGADOR") == 0) {
+        int vidas;
+        if (sscanf(mensaje, "IMPACTO_JUGADOR|%d", &vidas) == 1) {
+            printf("[RED] Impacto recibido! Vidas restantes: %d\n", vidas);
+            // Las vidas se sincronizan definitivamente por el mensaje JUGADOR siguiente
         }
     }
 }
@@ -123,7 +162,7 @@ static DWORD WINAPI escuchar_servidor(LPVOID lpParam) {
     while (1) {
         memset(buffer, 0, TAMANO_BUFFER);
         bytes_recibidos = recv(socket_cliente, buffer, TAMANO_BUFFER - 1, 0);
-        
+
         if (bytes_recibidos <= 0) {
             printf("\n[ALERTA CRITICA] Se ha perdido la conexion con el Servidor Java.\n");
             exit(EXIT_FAILURE);
@@ -165,9 +204,9 @@ int inicializar_conexion(const char* handshake) {
 
     // Configuracion de la IP y Puerto del servidor objetivo
     config_servidor.sin_family = AF_INET;
-    config_servidor.sin_addr.s_addr = inet_addr(IP_SERVIDOR); 
-    config_servidor.sin_port = htons(PUERTO_SERVIDOR); 
-    
+    config_servidor.sin_addr.s_addr = inet_addr(IP_SERVIDOR);
+    config_servidor.sin_port = htons(PUERTO_SERVIDOR);
+
     printf("[INFO] Intentando conexion...\n");
     if (connect(socket_cliente, (struct sockaddr *)&config_servidor, sizeof(config_servidor)) < 0) {
         printf("[ERROR] Servidor inalcanzable. Verifique que Java este en ejecucion.\n");
@@ -175,7 +214,7 @@ int inicializar_conexion(const char* handshake) {
     }
 
     printf("[INFO] Conexion TCP establecida correctamente.\n");
-    
+
     // Lanzamiento del hilo de escucha asincrona
     CreateThread(NULL, 0, escuchar_servidor, NULL, 0, NULL);
     return 1; // Exito
