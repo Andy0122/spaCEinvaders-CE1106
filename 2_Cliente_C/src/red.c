@@ -20,12 +20,14 @@ static SOCKET socket_cliente;
 static Jugador* ptr_jugadores;
 static Extraterrestre* ptr_aliens;
 static Bunker* ptr_bunkers;
+static Ovni* ptr_ovni;
 static char mensaje_handshake[64];
 
-void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker bunkers[]) {
+void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker bunkers[], Ovni* ovni) {
     ptr_jugadores = jugadores;
     ptr_aliens = aliens;
     ptr_bunkers = bunkers;
+    ptr_ovni = ovni;
 }
 
 /**
@@ -35,6 +37,7 @@ void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker 
  * - ALIEN|id|x|y|estado\n
  * - JUGADOR|id|x|vidas|puntos\n
  * - BUNKER|id|salud\n
+ * - OVNI|id|x|y|velocidad|puntosExtra\n (o estado si son 4 parámetros)
  */
 static void parsear_mensaje(const char* mensaje) {
     char tipo[16];
@@ -61,7 +64,7 @@ static void parsear_mensaje(const char* mensaje) {
         if (sscanf(mensaje, "JUGADOR|%d|%d|%d|%d", &id, &x, &vidas, &puntos) == 4) {
             // Depuracion visual en consola
             printf("[RED] Actualizando en tiempo real -> JUGADOR ID: %d, X: %d\n", id, x);
-            
+
             for (int i = 0; i < 2; i++) { 
                 if (ptr_jugadores[i].id_jugador == id) {
                     ptr_jugadores[i].posicion_x = x;
@@ -83,6 +86,34 @@ static void parsear_mensaje(const char* mensaje) {
             }
         }
     }
+    // LÓGICA DE PARSEO DEL OVNI (Integración con el motor de Java)
+    else if (strcmp(tipo, "OVNI") == 0) {
+        int id, x, y, p4, p5;
+        // Lee hasta 5 parámetros (dependiendo si es evento de creación o movimiento)
+        int leidos = sscanf(mensaje, "OVNI|%d|%d|%d|%d|%d", &id, &x, &y, &p4, &p5);
+        
+        if (leidos >= 4 && ptr_ovni != NULL) {
+            ptr_ovni->id = id;
+            ptr_ovni->x = x;
+            ptr_ovni->y = y;
+            
+            // Si llegan 5 datos, asumimos que es el evento inicial de CREACIÓN
+            if (leidos == 5) {
+                ptr_ovni->velocidad = p4;
+                ptr_ovni->puntosExtra = p5;
+                ptr_ovni->activo = 1; // Lo encendemos para renderizarlo
+            } 
+            // Si llegan 4 datos, es un evento de MOVIMIENTO donde p4 es el estado (activo/inactivo)
+            else if (leidos == 4) {
+                ptr_ovni->activo = p4; 
+            }
+            
+            // Apagar por seguridad si sale muy lejos de los márgenes de la pantalla
+            if (ptr_ovni->x > ANCHO_PANTALLA + 100 || ptr_ovni->x < -100) {
+                ptr_ovni->activo = 0;
+            }
+        }
+    }
 }
 
 static DWORD WINAPI escuchar_servidor(LPVOID lpParam) {
@@ -100,15 +131,14 @@ static DWORD WINAPI escuchar_servidor(LPVOID lpParam) {
 
         char* token_linea = strtok(buffer, "\n");
         while (token_linea != NULL) {
-            
-            // TODO: Java debe enviar "IDENTIFICATE\n" apenas acepte la conexión.
+            // Se responde a la petición de identidad del servidor
             if (strncmp(token_linea, "IDENTIFICATE", 12) == 0) {
                 enviar_comando_servidor(mensaje_handshake);
                 printf("[PROTOCOLO] Identidad enviada al Servidor: %s", mensaje_handshake);
             } else {
                 parsear_mensaje(token_linea);
             }
-            
+
             token_linea = strtok(NULL, "\n");
         }
     }
@@ -123,13 +153,13 @@ int inicializar_conexion(const char* handshake) {
 
     printf("[INFO] Inicializando subsistema de red (Winsock)...\n");
     if (WSAStartup(MAKEWORD(2,2), &wsa) != 0) {
-        printf("[ERROR] Fallo en inicializacion de Winsock. Codigo: %d\n", WSAGetLastError());
+        printf("[ERROR] Fallo en inicializacion de Winsock.\n");
         return 0;
     }
 
     // Creacion del Socket TCP/IP
     if ((socket_cliente = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
-        printf("[ERROR] Creacion de socket fallida. Codigo: %d\n", WSAGetLastError());
+        printf("[ERROR] Creacion de socket fallida.\n");
         return 0;
     }
 
@@ -145,10 +175,9 @@ int inicializar_conexion(const char* handshake) {
     }
 
     printf("[INFO] Conexion TCP establecida correctamente.\n");
-
+    
     // Lanzamiento del hilo de escucha asincrona
     CreateThread(NULL, 0, escuchar_servidor, NULL, 0, NULL);
-
     return 1; // Exito
 }
 

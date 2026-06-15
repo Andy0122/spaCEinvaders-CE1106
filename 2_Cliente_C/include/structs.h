@@ -42,4 +42,17 @@ typedef struct {
     int porcentaje_salud;   /**< Salud restante del escudo: 100, 70, 40 o 0 */
 } Bunker;
 
+/**
+ * @brief Estructura que representa la entidad del OVNI.
+ * Almacena su posición, recompensa y su estado de visibilidad en pantalla.
+ */
+typedef struct {
+    int id;
+    int x;
+    int y;
+    int velocidad;
+    int puntosExtra;
+    int activo; // 1 = visible en pantalla, 0 = oculto/destruido
+} Ovni;
+
 #endif // STRUCTS_H

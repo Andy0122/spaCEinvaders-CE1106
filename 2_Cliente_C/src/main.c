@@ -75,8 +75,11 @@ int main() {
         }
     }
 
+    // Creación de la estructura del OVNI en memoria local (Inicia apagado y en 0)
+    Ovni mi_ovni = {0, 0, 0, 0, 0, 0};
+
     // Vinculamos la memoria para que la red actualice la pantalla en segundo plano
-    vincular_punteros_red(arreglo_jugadores, arreglo_aliens, arreglo_bunkers);
+    vincular_punteros_red(arreglo_jugadores, arreglo_aliens, arreglo_bunkers, &mi_ovni);
 
     // 3. Inicialización de Red
     if (!inicializar_conexion(cadena_handshake)) {
@@ -88,9 +91,12 @@ int main() {
     inicializar_gui();
     int mi_indice_jugador = partida_id - 1; 
 
+    int control_uart_activo = 0;
     if (opcion_rol == 1) {
         if (!uart_inicializar(PUERTO_CONTROL)) {
             printf("[ADVERTENCIA] ESP8266 no detectada. El Jugador 1 NO podra moverse hasta que se conecte el hardware.\n");
+        } else {
+            control_uart_activo = 1;
         }
     }
 
@@ -101,23 +107,27 @@ int main() {
         if (opcion_rol != 3) {
             
             if (opcion_rol == 1) {
-                // Jugador 1: control físico por ESP8266 
-                char cmd;
-                while (uart_leer_comando(&cmd)) {
-                    if (cmd == 'L') {
-                        arreglo_jugadores[mi_indice_jugador].posicion_x -= 5;
-                        if (arreglo_jugadores[mi_indice_jugador].posicion_x < 0) arreglo_jugadores[mi_indice_jugador].posicion_x = 0;
-                        enviar_comando_servidor("JUGADOR|MOVER_IZQ\n");
-                    }
-                    else if (cmd == 'R') {
-                        arreglo_jugadores[mi_indice_jugador].posicion_x += 5;
-                        if (arreglo_jugadores[mi_indice_jugador].posicion_x > (ANCHO_PANTALLA - ANCHO_CANON)) arreglo_jugadores[mi_indice_jugador].posicion_x = ANCHO_PANTALLA - ANCHO_CANON;
-                        enviar_comando_servidor("JUGADOR|MOVER_DER\n");
-                    }
-                    else if (cmd == 'S') {
-                        printf("[INFO] Disparo recibido por UART\n");
-                        // Aquí luego se conecta el disparo con la lógica del juego
-                        enviar_comando_servidor("JUGADOR|DISPARAR\n");
+                // Jugador 1: control físico por ESP8266
+                if (control_uart_activo) {
+                    char cmd;
+                    while (uart_leer_comando(&cmd)) {
+                        if (cmd == 'L') {
+                            arreglo_jugadores[mi_indice_jugador].posicion_x -= 5;
+                            if (arreglo_jugadores[mi_indice_jugador].posicion_x < 0) arreglo_jugadores[mi_indice_jugador].posicion_x = 0;
+                            enviar_comando_servidor("JUGADOR|MOVER_IZQ\n");
+                        }
+                        else if (cmd == 'R') {
+                            arreglo_jugadores[mi_indice_jugador].posicion_x += 5;
+                            if (arreglo_jugadores[mi_indice_jugador].posicion_x > (ANCHO_PANTALLA - ANCHO_CANON)) {
+                                arreglo_jugadores[mi_indice_jugador].posicion_x = ANCHO_PANTALLA - ANCHO_CANON;
+                            }
+                            enviar_comando_servidor("JUGADOR|MOVER_DER\n");
+                        }
+                        else if (cmd == 'S') {
+                            printf("[INFO] Disparo recibido por UART\n");
+                            // Aquí luego se conecta el disparo con la lógica del juego
+                            enviar_comando_servidor("JUGADOR|DISPARAR\n");
+                        }
                     }
                 }
             }
@@ -155,6 +165,7 @@ int main() {
         dibujar_hud(arreglo_jugadores[mi_indice_jugador].puntuacion, arreglo_jugadores[mi_indice_jugador].vidas);
         dibujar_bunkers(arreglo_bunkers, CANTIDAD_BUNKERS);
         dibujar_matriz_aliens(arreglo_aliens, total_aliens);
+        dibujar_ovni(&mi_ovni);
         
         if (arreglo_jugadores[mi_indice_jugador].vidas > 0) {
             dibujar_jugador(&arreglo_jugadores[mi_indice_jugador]);
@@ -166,12 +177,12 @@ int main() {
     // 6. Finalización limpia
     cerrar_gui();
 
-    if (opcion_rol == 1) {
+    if (opcion_rol == 1 && control_uart_activo) {
         uart_cerrar();
     }
     
+    // Cierre de conexión con Winsock y limpieza de sockets
     cerrar_conexion(); 
-    
     printf("[INFO] Ejecucion finalizada correctamente.\n");
 
     return EXIT_SUCCESS;

@@ -14,7 +14,8 @@ void inicializar_gui();
 void dibujar_jugador(Jugador *j);
 void dibujar_hud(int puntuacion, int vidas);
 void dibujar_bunkers(Bunker bunkers[], int cantidad);
-void dibujar_matriz_aliens(Extraterrestre aliens[], int total_aliens); 
+void dibujar_matriz_aliens(Extraterrestre aliens[], int total_aliens);
+void dibujar_ovni(Ovni* o); 
 void cerrar_gui();
 
 #endif // GUI_H
