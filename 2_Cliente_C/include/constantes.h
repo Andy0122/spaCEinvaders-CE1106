@@ -13,6 +13,7 @@
 #define PUERTO_SERVIDOR 8080
 #define IP_SERVIDOR "127.0.0.1"
 #define TAMANO_BUFFER 1024
+#define PUERTO_CONTROL "COM7"
 
 /* ==========================================
  * Constantes de Protocolo de Comunicación

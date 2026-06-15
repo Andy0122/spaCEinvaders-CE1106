@@ -1,22 +1,26 @@
-# Variables de compilación
+# Variables de compilacion
 CC = gcc
 
-# -I./include le dice a gcc que busque raylib.h ahí
+# -I./include le dice a gcc que busque raylib.h ahi
 CFLAGS = -Wall -I./include
 
 # -L./lib le dice que busque libraylib.a en esa carpeta
 # -lraylib enlaza la biblioteca
 # -lgdi32 y -lwinmm son obligatorias en Windows para usar Raylib
-# -lws2_32 es la de sockets que ya tenías
+# -lws2_32 es la de sockets que ya tenias
 LDFLAGS = -L./lib -lraylib -lgdi32 -lwinmm -lws2_32
 
-# Definición de carpetas
+# Definicion de carpetas
 SRC_DIR = src
 INC_DIR = include
 BIN_DIR = .
 
 # Archivos fuente y de objeto
-SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/red.c $(SRC_DIR)/gui.c $(SRC_DIR)/estructuras_datos.c
+SRCS = $(SRC_DIR)/main.c \
+       $(SRC_DIR)/red.c \
+       $(SRC_DIR)/gui.c \
+       $(SRC_DIR)/estructuras_datos.c \
+       $(SRC_DIR)/control_uart.c
 OBJS = $(SRCS:.c=.o)
 EXEC = $(BIN_DIR)/cliente_spaceinvaders.exe
 
@@ -30,7 +34,7 @@ $(EXEC): $(OBJS)
 	@echo "Compilacion exitosa: $(EXEC)"
 	@echo "========================================="
 
-# Compilación de cada archivo fuente
+# Compilacion de cada archivo fuente
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
