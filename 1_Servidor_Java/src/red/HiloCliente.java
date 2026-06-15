@@ -6,6 +6,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import modelo.Juego;
+import red.DespachadorMensajes;
+
 /**
  * Hilo de ejecución concurrente dedicado a gestionar el ciclo de vida y la 
  * comunicación bidireccional de un cliente individual (Jugador o Espectador).
@@ -43,33 +46,28 @@ public class HiloCliente implements Runnable {
             flujoEntrada = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             // El parámetro 'true' habilita el auto-flush (envío inmediato de datos)
             flujoSalida = new PrintWriter(socket.getOutputStream(), true); 
+            DespachadorMensajes.registrar(flujoSalida);
 
             // 2. Handshake (Protocolo de identificación inicial)
-            // Se solicita al cliente que envíe su rol (JUGADOR o ESPECTADOR)
+            // Se solicita al cliente que envíe su rol (JUGADOR, ADMIN o ESPECTADOR)
             flujoSalida.println("IDENTIFICATE");
             String rolCliente = flujoEntrada.readLine();
             
             System.out.println("[PROTOCOLO] Cliente " + socket.getInetAddress().getHostAddress() + " registrado como: " + rolCliente);
 
-            // TODO: Integrar lógica de asignación a la instancia global de 'Juego'
-            if ("JUGADOR".equalsIgnoreCase(rolCliente)) {
-                // Lógica para instanciar un nuevo jugador y asignarle una nave
-            } else if ("ESPECTADOR".equalsIgnoreCase(rolCliente)) {
-                // Lógica para añadir el cliente a la lista de observadores (Patrón Observer)
-            }
-
             // 3. Ciclo principal de escucha de mensajes del cliente
             String mensajeRecibido;
             while ((mensajeRecibido = flujoEntrada.readLine()) != null) {
                 System.out.println("[RECV - " + rolCliente + "] " + mensajeRecibido);
-                
-                // TODO: Parseo de comandos (ej: "MOVER_IZQ", "DISPARAR")
-                // Aquí se actualizará el modelo de datos y se notificará a los demás clientes
+                String respuesta = Juego.getInstancia().procesarComando(rolCliente, mensajeRecibido);
+                flujoSalida.println(respuesta);
+                DespachadorMensajes.broadcast("ESTADO|" + Juego.getInstancia().obtenerResumenEstado());
             }
 
         } catch (IOException e) {
             System.err.println("[DESCONEXIÓN ABRUPTA] El cliente cerró la conexión inesperadamente. Detalles: " + e.getMessage());
         } finally {
+            DespachadorMensajes.remover(flujoSalida);
             // 4. Limpieza y cierre seguro de recursos (Vital para evitar fugas de memoria)
             cerrarConexion();
         }
