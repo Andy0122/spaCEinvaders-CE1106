@@ -14,6 +14,7 @@ import patrones.FabricaEnemigos;
 import patrones.ObservadorJuego;
 import estructuras_datos.ListaEnlazada;
 
+
 /**
  * Motor que concentra TODA la lógica de una partida de Space Invaders.
  *
