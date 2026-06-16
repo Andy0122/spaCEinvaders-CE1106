@@ -1,12 +1,7 @@
 /**
  * @file gui.c
- * @brief Implementación de las funciones de renderizado del cliente utilizando Sprites redimensionados.
- *
- * Cambios aplicados:
- *  - Sprites de aliens y OVNI agrandados (ver gui.h / ANCHO_ALIEN_RENDER).
- *  - Nueva función dibujar_balas_enemigas() para mostrar las balas de los
- *    aliens (antes invisibles: el daño a bunkers/jugador parecía no tener
- *    causa visible en pantalla).
+ * @brief Manejo del renderizado visual de la aplicación.
+ * Abstrae las funcionalidades de la librería gráfica Raylib.
  */
 
 #include "../include/gui.h"
@@ -15,12 +10,6 @@
 #include "raylib.h"
 #include "stdlib.h"
 
-/*
- * Tamaño de RENDERIZADO de los aliens, independiente de ANCHO_ALIEN/
- * ALTO_ALIEN (que siguen siendo 30x30 en constantes.h y se usan para el
- * cálculo de colisiones e hitboxes). Esto permite agrandar visualmente los
- * sprites sin afectar la lógica de colisión ya validada.
- */
 #define ANCHO_ALIEN_RENDER (ANCHO_ALIEN + 15)  /* 30 -> 45 */
 #define ALTO_ALIEN_RENDER  (ALTO_ALIEN  + 15)  /* 30 -> 45 */
 

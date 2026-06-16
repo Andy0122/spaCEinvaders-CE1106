@@ -3,122 +3,108 @@
 
 /**
  * @file structs.h
- * @brief Definición de las estructuras de datos (Modelo) del cliente.
- * Representa la información que será sincronizada desde el servidor Java.
+ * @brief Definición de las estructuras de datos y modelos del cliente.
+ * Representa las entidades sincronizadas desde el servidor.
  */
 
 /**
  * @struct Jugador
- * @brief Modela el cañón controlado por el usuario.
+ * @brief Entidad que representa el cañón controlado por el usuario.
  */
 typedef struct {
-    int id_jugador;    /**< Identificador único en red (Socket ID) */
-    int posicion_x;    /**< Posición en el eje X de la pantalla */
-    int vidas;         /**< Contador de vidas (Inicia en 3 según PDF) */
-    int puntuacion;    /**< Puntaje acumulado */
+    int id_jugador;    /**< Identificador único en red (Socket ID). */
+    int posicion_x;    /**< Coordenada en el eje X de la pantalla. */
+    int vidas;         /**< Contador de vidas restantes. */
+    int puntuacion;    /**< Puntaje acumulado en la sesión. */
 } Jugador;
 
 /**
  * @struct Extraterrestre
- * @brief Modela a los enemigos (Calamar, Cangrejo, Pulpo).
+ * @brief Entidad enemiga estándar (Calamar, Cangrejo o Pulpo).
  */
 typedef struct {
-    int id;            /**< Identificador único del alienígena */
-    int x;             /**< Posición actual en el eje X */
-    int y;             /**< Posición actual en el eje Y */
-    int tipo;          /**< 10 (Calamar), 20 (Cangrejo) o 40 (Pulpo) */
-    int estado;        /**< 1 = Vivo, 0 = Muerto */
+    int id;            /**< Identificador único de la entidad. */
+    int x;             /**< Coordenada actual en el eje X. */
+    int y;             /**< Coordenada actual en el eje Y. */
+    int tipo;          /**< Clasificación por puntos (10, 20 o 40). */
+    int estado;        /**< Estado lógico: 1 (Activo), 0 (Destruido). */
 } Extraterrestre;
 
 /**
  * @struct Bunker
- * @brief Modela los escudos de protección terrestre.
- * Representa las barreras físicas que se degradan con los disparos.
+ * @brief Estructura de defensa terrestre.
  */
 typedef struct {
-    int id;                 /**< Identificador único del escudo */
-    int x;                  /**< Posición actual en el eje X de la pantalla */
-    int y;                  /**< Posición actual en el eje Y de la pantalla */
-    int porcentaje_salud;   /**< Salud restante del escudo: 100, 70, 40 o 0 */
+    int id;                 /**< Identificador único de la barrera. */
+    int x;                  /**< Coordenada en el eje X. */
+    int y;                  /**< Coordenada en el eje Y. */
+    int porcentaje_salud;   /**< Nivel de integridad estructural (0-100). */
 } Bunker;
 
 /**
- * @brief Estructura que representa la entidad del OVNI.
- * Almacena su posición, recompensa y su estado de visibilidad en pantalla.
+ * @struct Ovni
+ * @brief Entidad especial de bonificación.
  */
 typedef struct {
-    int id;
-    int x;
-    int y;
-    int velocidad;
-    int puntosExtra;
-    int activo; // 1 = visible en pantalla, 0 = oculto/destruido
+    int id;            /**< Identificador único de la entidad. */
+    int x;             /**< Coordenada actual en el eje X. */
+    int y;             /**< Coordenada actual en el eje Y. */
+    int velocidad;     /**< Magnitud de desplazamiento por ciclo. */
+    int puntosExtra;   /**< Valor de recompensa al ser destruido. */
+    int activo;        /**< Estado de visibilidad: 1 (Visible), 0 (Oculto). */
 } Ovni;
 
-/* ==========================================
- * Nodo de la Lista Enlazada
- * ==========================================
- * Cada nodo representa una bala activa en pantalla.
- * Campos:
- *   x         - posición horizontal actual de la bala
- *   y         - posición vertical actual (decrece cada frame: sube hacia arriba)
- *   velocidad - píxeles que avanza por frame (siempre positivo, se resta a y)
- *   siguiente - puntero al siguiente nodo, NULL si es el último
+/**
+ * @struct NodoBala
+ * @brief Elemento base para la lista enlazada dinámica de proyectiles.
  */
 typedef struct NodoBala {
-    int x;
-    int y;
-    int velocidad;
-    struct NodoBala* siguiente;
+    int x;                      /**< Coordenada horizontal actual. */
+    int y;                      /**< Coordenada vertical actual. */
+    int velocidad;              /**< Magnitud y dirección de desplazamiento. */
+    struct NodoBala* siguiente; /**< Referencia al siguiente elemento de la colección. */
 } NodoBala;
 
 /**
- * @brief Lista enlazada de balas activas del jugador.
- * Campos:
- *   cabeza    - puntero al primer nodo, NULL si la lista está vacía
- *   cantidad  - número de balas activas actualmente en la lista
+ * @struct ListaBala
+ * @brief Estructura de control para la memoria dinámica de proyectiles.
  */
 typedef struct {
-    NodoBala* cabeza;
-    int cantidad;
+    NodoBala* cabeza;   /**< Puntero de acceso al primer elemento. */
+    int cantidad;       /**< Cantidad de elementos activos en memoria. */
 } ListaBala;
 
-/* ==========================================
- * Interfaz pública
- * ========================================== */
 
 /**
- * @brief Inicializa la lista: cabeza en NULL y cantidad en 0.
- * Debe llamarse una vez al inicio del programa antes de cualquier otra operación.
+ * @brief Inicializa la estructura de la lista enlazada.
+ * @param lista Referencia a la lista.
  */
 void lista_inicializar(ListaBala* lista);
 
 /**
- * @brief Inserta una bala nueva al frente de la lista.
- * @param lista    Puntero a la lista de balas.
- * @param x        Posición horizontal inicial de la bala.
- * @param y        Posición vertical inicial de la bala (parte sobre el cañón).
- * @param velocidad Píxeles que avanza por frame.
+ * @brief Agrega un nuevo elemento al inicio de la estructura.
+ * @param lista Referencia a la lista.
+ * @param x Coordenada X inicial.
+ * @param y Coordenada Y inicial.
+ * @param velocidad Desplazamiento por iteración.
  */
 void lista_insertar_frente(ListaBala* lista, int x, int y, int velocidad);
 
 /**
- * @brief Elimina todos los nodos cuya posición y sea menor a 0 (salieron de pantalla).
- * Recorre la lista y libera la memoria de cada nodo eliminado.
- * @param lista Puntero a la lista de balas.
+ * @brief Libera los recursos de los elementos fuera del área de renderizado.
+ * @param lista Referencia a la lista.
  */
 void lista_eliminar_fuera_de_pantalla(ListaBala* lista);
 
 /**
- * @brief Mueve todas las balas hacia arriba restando su velocidad a y.
- * @param lista Puntero a la lista de balas.
+ * @brief Actualiza las coordenadas espaciales de los elementos iterables.
+ * @param lista Referencia a la lista.
  */
 void lista_mover_balas(ListaBala* lista);
 
 /**
- * @brief Libera toda la memoria de la lista (todos los nodos).
- * Debe llamarse al cerrar el programa.
- * @param lista Puntero a la lista de balas.
+ * @brief Libera el bloque de memoria completo asignado a la estructura.
+ * @param lista Referencia a la lista.
  */
 void lista_destruir(ListaBala* lista);
 

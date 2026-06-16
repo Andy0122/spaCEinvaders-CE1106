@@ -1,16 +1,23 @@
-/*
-    * Clase que representa el bunker en el juego Space Invaders. El bunker tiene una cantidad de vida que se reduce cada vez que es impactado por un disparo de los extraterrestres. Cuando la vida del bunker llega a cero, se considera destruido.
-    * El bunker actúa como una barrera de protección para el jugador, permitiendo que los disparos de los extraterrestres sean absorbidos por el bunker en lugar de impactar directamente al jugador. Sin embargo, el bunker no es indestructible y puede ser destruido si recibe suficientes impactos.
-    * Esta clase incluye métodos para recibir impactos, verificar si el bunker está destruido y obtener la vida actual del bunker.
-*/
 package modelo;
 
+/**
+ * @class Bunker
+ * @brief Representa una barrera de defensa estática en el juego.
+ * Proporciona protección al jugador absorbiendo los impactos de los proyectiles enemigos
+ * hasta que su integridad estructural se reduce a cero.
+ */
 public class Bunker {
     private int id;
     private int vida;
     private int posicionX;
     private int posicionY;
 
+    /**
+     * @brief Constructor de la entidad Bunker.
+     * @param id Identificador único de la defensa.
+     * @param posicionX Coordenada horizontal en la cuadrícula.
+     * @param posicionY Coordenada vertical en la cuadrícula.
+     */
     public Bunker(int id, int posicionX, int posicionY) {
         this.id = id;
         this.vida = 100;
@@ -18,22 +25,14 @@ public class Bunker {
         this.posicionY = posicionY;
     }
 
-    public int getId() {
-        return id;
-    }
+    public int getId() { return id; }
+    public int getVida() { return vida; }
+    public int getPosicionX() { return posicionX; }
+    public int getPosicionY() { return posicionY; }
 
-    public int getVida() {
-        return vida;
-    }
-
-    public int getPosicionX() {
-        return posicionX;
-    }
-
-    public int getPosicionY() {
-        return posicionY;
-    }
-    
+    /**
+     * @brief Reduce la integridad estructural del bunker tras recibir un impacto.
+     */
     public void recibirImpacto() {
         if (vida > 0) {
             vida -= 20;
@@ -47,6 +46,10 @@ public class Bunker {
         this.vida = Math.max(0, vida);
     }
 
+    /**
+     * @brief Evalúa si el bunker ha sido completamente destruido.
+     * @return true si la vida es 0, false en caso contrario.
+     */
     public boolean estaDestruido() {
         return vida == 0;
     }

@@ -9,8 +9,9 @@ import modelo.GestorPartidas;
 import modelo.Juego;
 
 /**
- * Hilo de ejecución concurrente dedicado a gestionar el ciclo de vida y la 
- * comunicación bidireccional de un cliente individual (Jugador o Espectador).
+ * @class HiloCliente
+ * @brief Tarea concurrente dedicada a gestionar el ciclo de vida y la 
+ * comunicación bidireccional de un socket cliente individual.
  */
 public class HiloCliente implements Runnable {
     
@@ -19,6 +20,10 @@ public class HiloCliente implements Runnable {
     private BufferedReader flujoEntrada;
     private int idPartidaActual = -1;
 
+    /**
+     * @brief Constructor del manejador de cliente.
+     * @param socket Conexión TCP establecida con el cliente.
+     */
     public HiloCliente(Socket socket) {
         this.socket = socket;
     }
@@ -37,7 +42,7 @@ public class HiloCliente implements Runnable {
             String handshake = flujoEntrada.readLine();
             if (handshake == null) return;
             
-            // Ej: "ESPECTADOR|2" o "JUGADOR|1"
+             // Ej: "ESPECTADOR|2" o "JUGADOR|1"
             String[] datosHandshake = handshake.split("\\|");
             String rol = datosHandshake[0].trim();
             int idPartida = Integer.parseInt(datosHandshake[1].trim());
@@ -48,7 +53,7 @@ public class HiloCliente implements Runnable {
             if (rol.equals("ESPECTADOR")) {
                 // Si la partida no existe, bloqueamos el acceso
                 if (!GestorPartidas.existePartida(idPartida)) {
-                    System.out.println("[ALERTA] Espectador intentó unirse a sala inexistente: " + idPartida);
+                    System.out.println("WARNING [HiloCliente]: Intento de acceso denegado a sala inexistente (" + idPartida + ").");
                     flujoSalida.println("ERROR|La partida no existe");
                     return; // Termina el hilo inmediatamente y lo desconecta
                 }
@@ -58,16 +63,9 @@ public class HiloCliente implements Runnable {
                 miPartida = GestorPartidas.obtenerOCrearPartida(idPartida);
             }
 
-            // 2. Registrar en la sala correcta
             DespachadorMensajes.registrar(idPartida, flujoSalida);
-            System.out.println("[CONEXION] Nuevo " + rol + " conectado a Sala " + idPartida);
+            System.out.println("INFO [HiloCliente]: Nuevo " + rol + " registrado en la Sala " + idPartida);
 
-            // 2.1. Reenviar el estado COMPLETO de la partida AHORA que el
-            //      socket ya está registrado (jugadores Y espectadores).
-            //      Antes esto se hacía dentro de iniciarJuego() (antes de
-            //      este registro), así que el broadcast de la ola inicial
-            //      siempre se perdía en silencio: el cliente nunca recibía
-            //      ningún mensaje ALIEN.
             miPartida.reenviarEstadoActual();
             miPartida.reanudarJuego();
 
@@ -80,18 +78,21 @@ public class HiloCliente implements Runnable {
                 }
             }
         } catch (Exception e) {
-            System.out.println("[DESCONEXION] Cliente perdió conexión.");
+            System.out.println("INFO [HiloCliente]: Conexión interrumpida con el cliente.");
         } finally {
             cerrarConexion();
         }
     }
 
+    /**
+     * @brief Rutina de limpieza y cierre de flujos de red.
+     * Notifica al motor la desconexión para evaluar el estado de la sala.
+     */
     private void cerrarConexion() {
         try {
-            // NUEVO BLOQUE: Limpieza del registro y pausa del motor
             if (idPartidaActual != -1 && flujoSalida != null) {
                 DespachadorMensajes.remover(idPartidaActual, flujoSalida);
-                System.out.println("[RED] Cliente removido de la sala " + idPartidaActual);
+                System.out.println("INFO [HiloCliente]: Recursos liberados para la sala " + idPartidaActual);
                 
                 // Si la sala quedó vacía, pausamos el juego
                 if (DespachadorMensajes.estaSalaVacia(idPartidaActual)) {
@@ -107,7 +108,7 @@ public class HiloCliente implements Runnable {
             if (socket != null && !socket.isClosed()) socket.close();
             System.out.println("[INFO] Recursos del cliente liberados correctamente.");
         } catch (IOException e) {
-            System.err.println("[ERROR] No se pudo cerrar el socket adecuadamente: " + e.getMessage());
+            System.err.println("ERROR [HiloCliente]: Fallo durante el cierre de la conexión TCP -> " + e.getMessage());
         }
     }
 }

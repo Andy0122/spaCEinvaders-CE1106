@@ -1,5 +1,6 @@
 package modelo;
 
+import estructuras_datos.ListaEnlazada;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,12 +13,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import patrones.FabricaEnemigos;
 import patrones.ObservadorJuego;
-import estructuras_datos.ListaEnlazada;
 
 
 /**
- * Motor que concentra TODA la lógica de una partida de Space Invaders.
- *
+ * @class Juego
+ * @brief Motor principal de lógica del sistema.
+ * * Implementa el procesamiento en tiempo real de la partida, controlando las colisiones,
+ * cinemática de entidades, rutinas de inteligencia artificial básica (disparos aleatorios)
+ * y resolución de eventos de estado. Actúa como el núcleo del patrón Observer para 
+ * notificar cambios de estado a la capa de red.
+ * 
  * Patrones de diseño aplicados:
  *   1. Factory Method → FabricaEnemigos
  *   2. Observer       → ObservadorJuego + DespachadorMensajes
@@ -37,31 +42,20 @@ import estructuras_datos.ListaEnlazada;
  *   IMPACTO_JUGADOR|vidas
  *   DISPARO|x|y
  *   GAME_OVER
- *
- * Cambios aplicados:
- *   - TICK_MS reducido de 500 → 200 ms (aliens más rápidos).
- *   - velocidadBaseExtraterrestres inicial subido de 2 → 5 px/tick.
- *   - INCREMENTO_VELOCIDAD subido de 1 → 2 por oleada.
- *   - Al iniciar el juego se hace broadcast del estado completo para que
- *     los clientes que ya están conectados reciban la cuadrícula inicial
- *     sin esperar el primer tick.
  */
 public class Juego {
-
     // -------------------------------------------------------------------------
     // Constantes del motor
     // -------------------------------------------------------------------------
     /** ms entre ticks del game loop. Reducido de 500 → 200 para más velocidad. */
-    private static final int    TICK_MS            = 200;
+    private static final int    TICK_MS = 200;
     private static final int    INTERVALO_OVNI_SEG = 20;
-    private static final int    LIMITE_X_MAX       = 750;
-    private static final int    LIMITE_Y_GAMEOVER  = 520;
-    private static final int    DELTA_Y_ALIEN      = 20;
-    private static final double PROB_DISPARO_ALIEN = 0.008; // bajado de 0.02 -> menos balas en pantalla a la vez
-    private static final int    VELOCIDAD_BALA_ENEMIGA = 14; // px por tick (era 8 fijo, ahora más rápida)
-
-    /** Píxeles extra de velocidad que se suman por cada oleada completada. */
-    private static final int INCREMENTO_VELOCIDAD = 2;  // era 1
+    private static final int    LIMITE_X_MAX = 750;
+    private static final int    LIMITE_Y_GAMEOVER = 520;
+    private static final int    DELTA_Y_ALIEN = 20;
+    private static final double PROB_DISPARO_ALIEN = 0.008; 
+    private static final int    VELOCIDAD_BALA_ENEMIGA = 14; 
+    private static final int INCREMENTO_VELOCIDAD = 2;  
 
     // -------------------------------------------------------------------------
     // Estado de la partida
@@ -93,9 +87,10 @@ public class Juego {
     // -------------------------------------------------------------------------
     private ScheduledExecutorService scheduler;
 
-    // =========================================================================
-    // Constructor
-    // =========================================================================
+    /**
+     * @brief Inicializa una nueva instancia del motor de juego.
+     * @param idPartida Identificador asignado a la sala.
+     */
     public Juego(int idPartida) {
         this.idPartida                    = idPartida;
         this.extraterrestres              = new ConcurrentHashMap<>();
@@ -103,17 +98,17 @@ public class Juego {
         this.bunkers                      = Collections.synchronizedList(new ArrayList<>());
         this.balasEnemigas                = new ListaEnlazada<>();
         this.balasJugador                 = new ListaEnlazada<>();
-        this.velocidadBaseExtraterrestres = 4; // velocidad inicial subida nuevamente (era 5)
+        this.velocidadBaseExtraterrestres = 4; 
     }
 
-    // =========================================================================
-    // Inicialización y arranque
-    // =========================================================================
+    /**
+     * @brief Reinicia el estado del modelo y lanza los hilos de procesamiento.
+     */
     public synchronized void iniciarJuego() {
         this.puntuacion                   = 0;
         this.gameOver                     = false;
         this.direccionAliens              = 1;
-        this.velocidadBaseExtraterrestres = 4; // velocidad inicial subida nuevamente (era 5)
+        this.velocidadBaseExtraterrestres = 4; 
         this.jugador                      = new Jugador(400, 540);
 
         this.extraterrestres.clear();
@@ -128,29 +123,17 @@ public class Juego {
         this.bunkers.add(new Bunker(3, 650, 450));
 
         crearOlaInicial();
-
         arrancarLoops();
     }
 
     /**
-     * Reenvía el estado COMPLETO actual de la partida a todos los clientes
-     * de la sala. Debe llamarse DESPUÉS de que el socket del cliente esté
-     * registrado en DespachadorMensajes (ver HiloCliente), nunca antes.
-     *
-     * BUG CORREGIDO: antes esto se llamaba dentro de iniciarJuego(), que a
-     * su vez es invocado por GestorPartidas.obtenerOCrearPartida() ANTES de
-     * que HiloCliente registre el socket en la sala. DespachadorMensajes.
-     * broadcast() descarta silenciosamente cualquier mensaje si la sala aún
-     * no tiene clientes registrados, así que los 12 mensajes ALIEN de la
-     * ola inicial se perdían siempre, sin error visible. El cliente C nunca
-     * recibía ningún ALIEN aunque el servidor sí los creaba y los usaba
-     * para colisiones/disparos internamente.
+     * @brief Sincroniza explícitamente el estado completo del modelo hacia los suscriptores.
      */
     public synchronized void reenviarEstadoActual() {
         broadcastEstadoInicial();
     }
 
-    /**
+     /**
      * Envía a todos los clientes de la sala el estado completo de la partida
      * recién inicializada: aliens, bunkers y jugador.
      * Esto garantiza que la cuadrícula aparezca inmediatamente en pantalla
@@ -182,7 +165,7 @@ public class Juego {
         scheduler.scheduleAtFixedRate(() -> {
             try { tickJuego(); }
             catch (Exception ex) {
-                System.err.println("[LOOP] Error en tick: " + ex.getMessage());
+                System.err.println("ERROR [Juego]: Fallo en rutina principal -> " + ex.getMessage());
             }
         }, TICK_MS, TICK_MS, TimeUnit.MILLISECONDS);
 
@@ -190,11 +173,11 @@ public class Juego {
         scheduler.scheduleAtFixedRate(() -> {
             try { tickOvni(); }
             catch (Exception ex) {
-                System.err.println("[OVNI] Error en tick OVNI: " + ex.getMessage());
+                System.err.println("ERROR [Juego]: Fallo en rutina de entidad especial -> " + ex.getMessage());
             }
         }, INTERVALO_OVNI_SEG, INTERVALO_OVNI_SEG, TimeUnit.SECONDS);
 
-        System.out.println("[JUEGO] Sala " + idPartida + ": loops iniciados.");
+        System.out.println("INFO [Juego]: Procesos asíncronos iniciados para sala " + idPartida);
     }
 
     private void detenerLoops() {
@@ -203,9 +186,9 @@ public class Juego {
         }
     }
 
-    // =========================================================================
-    // Tick principal del juego
-    // =========================================================================
+    /**
+     * @brief Ciclo maestro de simulación física y resolución de reglas.
+     */
     private synchronized void tickJuego() {
         if (gameOver) return;
 
@@ -312,7 +295,7 @@ public class Juego {
         }
         for (Enemigo e : extraterrestres.values()) {
             if (e.getPosicionY() >= LIMITE_Y_GAMEOVER) {
-                declararGameOver("ALIENS LLEGARON AL CANON");
+                declararGameOver("INVASION COMPLETADA");
                 return;
             }
         }
@@ -321,7 +304,7 @@ public class Juego {
     private void declararGameOver(String motivo) {
         if (gameOver) return;
         gameOver = true;
-        System.out.println("[JUEGO] Sala " + idPartida + " — GAME OVER: " + motivo);
+        System.out.println("INFO [Juego]: Sala " + idPartida + " — FIN DEL JUEGO: " + motivo);
         ObservadorJuego.notificarGameOver(idPartida);
         detenerLoops();
     }
@@ -343,9 +326,8 @@ public class Juego {
             Ovni nuevo = new Ovni(xInicio, 30, 30, puntosAleatorios, dirValor);
             ovnis.put(nuevo.getId(), nuevo);
             ObservadorJuego.notificarCreacionOvni(idPartida, nuevo.getId(),
-                    xInicio, 30, 30, puntosAleatorios);
-            System.out.println("[OVNI] Sala " + idPartida
-                    + ": OVNI generado automáticamente id=" + nuevo.getId());
+                    xInicio, 30, 5, puntosAleatorios);
+            System.out.println("INFO [Juego]: Sala " + idPartida + " — Entidad OVNI despachada (ID: " + nuevo.getId() + ")");
         }
     }
 
@@ -366,9 +348,12 @@ public class Juego {
         fuera.forEach(ovnis::remove);
     }
 
-    // =========================================================================
-    // Procesamiento de comandos
-    // =========================================================================
+    /**
+     * @brief Interfaz de enrutamiento y ejecución de instrucciones externas.
+     * @param rol Clasificación del originador ("ADMIN", "JUGADOR", "ESPECTADOR").
+     * @param mensaje Trama cruda de la instrucción.
+     * @return Código de respuesta para el protocolo de red.
+     */
     public synchronized String procesarComando(String rol, String mensaje) {
         if (mensaje == null || mensaje.isEmpty()) return "ERROR|Comando vacío";
 
@@ -613,8 +598,7 @@ public class Juego {
             broadcastEstadoInicial();
             ObservadorJuego.notificarVidasJugador(idPartida, idPartida,
                     jugador.getX(), jugador.getVidas(), puntuacion);
-            System.out.println("[JUEGO] Sala " + idPartida
-                    + ": nueva oleada. Velocidad=" + velocidadBaseExtraterrestres);
+            System.out.println("INFO [Juego]: Sala " + idPartida + " — Nueva oleada generada. Velocidad actual=" + velocidadBaseExtraterrestres);
         }
     }
 
@@ -755,18 +739,24 @@ public class Juego {
         for (int[] b : aEliminar) balasJugador.eliminar(b);
     }
 
+    /**
+     * @brief Pausa las rutinas de ejecución asíncrona del juego.
+     */
     public synchronized void pausarJuego() {
         if (!gameOver) {
             detenerLoops();
-            System.out.println("[JUEGO] Sala " + idPartida + ": Juego pausado (sin clientes conectados).");
+            System.out.println("INFO [Juego]: Sala " + idPartida + " — Juego en espera (sin clientes activos).");
         }
     }
 
+    /**
+     * @brief Reactiva las rutinas de ejecución si existen las condiciones necesarias.
+     */
     public synchronized void reanudarJuego() {
         // Solo lo reanudamos si no hay Game Over y si los hilos están apagados
         if (!gameOver && (scheduler == null || scheduler.isShutdown())) {
             arrancarLoops();
-            System.out.println("[JUEGO] Sala " + idPartida + ": Juego reanudado.");
+            System.out.println("INFO [Juego]: Sala " + idPartida + " — Juego reactivado.");
         }
     }
 }

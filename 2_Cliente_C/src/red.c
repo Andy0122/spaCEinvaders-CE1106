@@ -1,12 +1,7 @@
 /**
  * @file red.c
- * @brief Implementación de las rutinas de comunicación y parseo de mensajes del servidor.
- *
- * Correcciones aplicadas:
- *  1. Bug \r\n: se elimina el \r residual de cada línea antes de parsear.
- *  2. Bug DISPARO: el servidor emite DISPARO|x|y (2 campos), no 3.
- *  3. Bug sincronización jugador: se aplica siempre la posición del servidor.
- *  4. Bug TCP framing: acumulador de bytes para ensamblar líneas partidas entre recv().
+ * @brief Implementación del protocolo de comunicación y sincronización de red.
+ * Procesa la recepción de la trama de bytes y actualiza el estado local de la aplicación.
  */
 
 #include <stdio.h>
@@ -23,12 +18,12 @@
 static SOCKET socket_cliente;
 
 // Punteros globales para modificar la memoria de la interfaz gráfica directamente
-static Jugador*        ptr_jugadores;
+static Jugador* ptr_jugadores;
 static Extraterrestre* ptr_aliens;
-static Bunker*         ptr_bunkers;
-static Ovni*           ptr_ovni;
-static ListaBala*      ptr_balas;
-static ListaBala*      ptr_balas_enemigas; /**< Balas de los aliens, bajan en pantalla */
+static Bunker* ptr_bunkers;
+static Ovni* ptr_ovni;
+static ListaBala* ptr_balas;
+static ListaBala* ptr_balas_enemigas; 
 static char            mensaje_handshake[64];
 
 void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker bunkers[], Ovni* ovni, ListaBala* balas, ListaBala* balas_enemigas) {
@@ -41,49 +36,42 @@ void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker 
 }
 
 /**
- * @brief Busca el índice de un alien por su id en el arreglo local.
- *        Si el id no existe, devuelve el primer slot libre (id == -1).
- *        Si no hay slots libres, devuelve -1 para ignorar el mensaje.
+ * @brief Obtiene el índice de almacenamiento de una entidad alienígena.
+ * @param id Identificador en red de la entidad.
+ * @return Índice del bloque de memoria asignado o -1 si no hay espacio.
  */
 static int buscar_o_reservar_slot_alien(int id) {
     int slot_libre = -1;
     for (int i = 0; i < MAX_ALIENS; i++) {
-        if (ptr_aliens[i].id == id) {
-            return i; // Encontrado
-        }
-        if (ptr_aliens[i].id == -1 && slot_libre == -1) {
-            slot_libre = i; // Primer hueco disponible
-        }
+        if (ptr_aliens[i].id == id) return i; // Encontrado
+        if (ptr_aliens[i].id == -1 && slot_libre == -1) slot_libre = i; // Primer hueco disponible
     }
+
     // No encontrado: asignamos el primer slot libre
-    if (slot_libre != -1) {
-        ptr_aliens[slot_libre].id = id;
-    }
+    if (slot_libre != -1) ptr_aliens[slot_libre].id = id;
     return slot_libre;
 }
 
 /**
- * @brief Marca para eliminación la bala enemiga MÁS CERCANA a (x,y).
- *
- * El servidor avisa la posición exacta donde resolvió la colisión, pero
- * por latencia de red la posición local de esa misma bala en el cliente
- * puede diferir ligeramente. Se busca dentro de un radio razonable (40px)
- * en vez de exigir coincidencia exacta, y se marca con y=-999 para que
- * lista_eliminar_fuera_de_pantalla() la limpie en el siguiente paso del
- * frame actual (mismo mecanismo ya usado para colisiones bala-alien).
+ * @brief Identifica y elimina un proyectil tras el registro de un impacto en el servidor.
+ * Compensa el retraso de red buscando la coincidencia más próxima por radio.
+ * @param lista Estructura dinámica de proyectiles a analizar.
+ * @param x_impacto Coordenada horizontal del servidor.
+ * @param y_impacto Coordenada vertical del servidor.
  */
 static void eliminar_bala_enemiga_cercana(ListaBala* lista, int x_impacto, int y_impacto) {
     if (lista == NULL) return;
 
     NodoBala* mas_cercana = NULL;
-    int       menor_distancia = 999999;
-
+    int menor_distancia = 999999;
     NodoBala* actual = lista->cabeza;
+
     while (actual != NULL) {
-        if (actual->y >= 0) { /* ignorar las ya marcadas este frame */
+        if (actual->y >= 0) { 
             int dx = actual->x - x_impacto;
             int dy = actual->y - y_impacto;
-            int distancia = dx * dx + dy * dy; /* distancia al cuadrado, evita sqrt */
+            int distancia = dx * dx + dy * dy; 
+            
             if (distancia < menor_distancia) {
                 menor_distancia = distancia;
                 mas_cercana = actual;
@@ -92,16 +80,16 @@ static void eliminar_bala_enemiga_cercana(ListaBala* lista, int x_impacto, int y
         actual = actual->siguiente;
     }
 
-    /* Radio de búsqueda: 40px al cuadrado = 1600 */
+    // Radio de búsqueda
     if (mas_cercana != NULL && menor_distancia <= 1600) {
         mas_cercana->y = -999;
     }
 }
 
 /**
- * @brief Parsea una línea de texto recibida del servidor y actualiza los structs locales.
- *
- * Formatos esperados:
+ * @brief Decodifica una instrucción recibida y aplica los cambios en el modelo de datos.
+ * @param mensaje Cadena de caracteres que contiene la instrucción del protocolo.
+ *  Formatos esperados:
  *   ALIEN|id|x|y|estado          (estado 1=vivo, 0=destruido)
  *   JUGADOR|id|x|vidas|puntos
  *   BUNKER|id|salud
@@ -116,7 +104,6 @@ static void parsear_mensaje(const char* mensaje) {
     char tipo[32];
     if (sscanf(mensaje, "%31[^|]", tipo) != 1) return;
 
-    /* ------ ALIEN ------ */
     if (strcmp(tipo, "ALIEN") == 0) {
         int id, tipo_alien, x, y, estado;
         if (sscanf(mensaje, "ALIEN|%d|%d|%d|%d|%d", &id, &tipo_alien, &x, &y, &estado) == 5) {
@@ -129,15 +116,12 @@ static void parsear_mensaje(const char* mensaje) {
             }
         }
     }
-
-    /* ------ JUGADOR ------ */
     else if (strcmp(tipo, "JUGADOR") == 0) {
         int id, x, vidas, puntos;
         if (sscanf(mensaje, "JUGADOR|%d|%d|%d|%d", &id, &x, &vidas, &puntos) == 4) {
             for (int i = 0; i < 2; i++) {
                 if (ptr_jugadores[i].id_jugador == id) {
-                    // FIX 3: aplicar siempre la posición autoritativa del servidor
-                    ptr_jugadores[i].posicion_x  = x;
+                    ptr_jugadores[i].posicion_x   = x;
                     ptr_jugadores[i].vidas        = vidas;
                     ptr_jugadores[i].puntuacion   = puntos;
                     break;
@@ -145,8 +129,6 @@ static void parsear_mensaje(const char* mensaje) {
             }
         }
     }
-
-    /* ------ BUNKER ------ */
     else if (strcmp(tipo, "BUNKER") == 0) {
         int id, salud;
         if (sscanf(mensaje, "BUNKER|%d|%d", &id, &salud) == 2) {
@@ -158,8 +140,6 @@ static void parsear_mensaje(const char* mensaje) {
             }
         }
     }
-
-    /* ------ OVNI ------ */
     else if (strcmp(tipo, "OVNI") == 0) {
         int id, x, y, p4, p5;
         int leidos = sscanf(mensaje, "OVNI|%d|%d|%d|%d|%d", &id, &x, &y, &p4, &p5);
@@ -185,7 +165,6 @@ static void parsear_mensaje(const char* mensaje) {
         }
     }
 
-    /* ------ VELOCIDAD (informativo) ------ */
     else if (strcmp(tipo, "VELOCIDAD") == 0) {
         int vel;
         if (sscanf(mensaje, "VELOCIDAD|%d", &vel) == 1) {
@@ -193,7 +172,6 @@ static void parsear_mensaje(const char* mensaje) {
         }
     }
 
-    /* ------ IMPACTO_JUGADOR ------ */
     else if (strcmp(tipo, "IMPACTO_JUGADOR") == 0) {
         int vidas;
         if (sscanf(mensaje, "IMPACTO_JUGADOR|%d", &vidas) == 1) {
@@ -201,9 +179,6 @@ static void parsear_mensaje(const char* mensaje) {
             // Las vidas se sincronizan definitivamente por el mensaje JUGADOR siguiente
         }
     }
-
-    /* ------ DISPARO (bala del jugador, sube) ------ */
-    // FIX 1: el servidor emite DISPARO|x|y (solo 2 campos), no DISPARO|id|x|y
     else if (strcmp(tipo, "DISPARO") == 0) {
         int x, y;
         if (sscanf(mensaje, "DISPARO|%d|%d", &x, &y) == 2) {
@@ -212,12 +187,6 @@ static void parsear_mensaje(const char* mensaje) {
             }
         }
     }
-
-    /* ------ DISPARO_ENEMIGO (bala de un alien, baja) ------ */
-    // Reutiliza la misma estructura ListaBala/NodoBala (requisito de uso de
-    // structs), pero con velocidad NEGATIVA: lista_mover_balas() hace
-    // "y -= velocidad", así que velocidad=-8 produce "y -= (-8) = y + 8",
-    // es decir la bala BAJA en pantalla en vez de subir.
     else if (strcmp(tipo, "DISPARO_ENEMIGO") == 0) {
         int x, y;
         if (sscanf(mensaje, "DISPARO_ENEMIGO|%d|%d", &x, &y) == 2) {
@@ -226,20 +195,12 @@ static void parsear_mensaje(const char* mensaje) {
             }
         }
     }
-
-    /* ------ BALA_ENEMIGA_DESTRUIDA ------ */
-    // El servidor avisa que una bala enemiga impactó un bunker o al
-    // jugador. Sin esto el cliente seguía dibujando y moviendo su copia
-    // local de esa bala hasta que salía de pantalla por su cuenta, varios
-    // frames después del impacto real ya resuelto en el servidor.
     else if (strcmp(tipo, "BALA_ENEMIGA_DESTRUIDA") == 0) {
         int x, y;
         if (sscanf(mensaje, "BALA_ENEMIGA_DESTRUIDA|%d|%d", &x, &y) == 2) {
             eliminar_bala_enemiga_cercana(ptr_balas_enemigas, x, y);
         }
     }
-
-    /* ------ BALA_JUGADOR_DESTRUIDA ------ */
     else if (strcmp(tipo, "BALA_JUGADOR_DESTRUIDA") == 0) {
         int x, y;
         if (sscanf(mensaje, "BALA_JUGADOR_DESTRUIDA|%d|%d", &x, &y) == 2) {
@@ -248,17 +209,9 @@ static void parsear_mensaje(const char* mensaje) {
         }
     }
 
-    /* ------ GAME_OVER ------ */
     else if (strcmp(tipo, "GAME_OVER") == 0) {
         printf("[RED] GAME OVER recibido del servidor.\n");
-        // La GUI puede verificar las vidas para mostrar la pantalla de fin
     }
-
-    /* ------ LIMPIAR_ALIENS ------ */
-    // El servidor manda esto justo antes de transmitir una nueva ola.
-    // Sin esto, los aliens de la ola anterior (con IDs ya no usados, ya que
-    // el contador de ID en el servidor es global y no se reinicia por ola)
-    // quedaban "fantasma" congelados en pantalla para siempre.
     else if (strcmp(tipo, "LIMPIAR_ALIENS") == 0) {
         for (int i = 0; i < MAX_ALIENS; i++) {
             ptr_aliens[i].id     = -1;
@@ -272,11 +225,7 @@ static void parsear_mensaje(const char* mensaje) {
 }
 
 /**
- * @brief Hilo de escucha asíncrona del servidor.
- *
- * FIX 2: usa un acumulador para ensamblar líneas completas, ya que TCP puede
- *         partir un mensaje entre dos recv() consecutivos.
- * FIX \r\n: elimina el \r antes de pasarle la línea a parsear_mensaje().
+ * @brief Subrutina de lectura continua asíncrona mediante Sockets.
  */
 static DWORD WINAPI escuchar_servidor(LPVOID lpParam) {
     char buffer[TAMANO_BUFFER];
@@ -292,7 +241,7 @@ static DWORD WINAPI escuchar_servidor(LPVOID lpParam) {
         bytes_recibidos = recv(socket_cliente, buffer, TAMANO_BUFFER - 1, 0);
 
         if (bytes_recibidos <= 0) {
-            printf("\n[ALERTA CRITICA] Se ha perdido la conexion con el Servidor Java.\n");
+            printf("\n[ALERTA CRITICA] Se ha perdido la comunicacion con el servidor.\n");
             exit(EXIT_FAILURE);
         }
 
@@ -314,7 +263,7 @@ static DWORD WINAPI escuchar_servidor(LPVOID lpParam) {
         while ((salto = strchr(inicio, '\n')) != NULL) {
             *salto = '\0';
 
-            // FIX \r\n: eliminar el \r residual de líneas Windows
+            // Sanitización del retorno de carro (CR)
             int len = (int)strlen(inicio);
             if (len > 0 && inicio[len - 1] == '\r') {
                 inicio[len - 1] = '\0';
@@ -329,7 +278,6 @@ static DWORD WINAPI escuchar_servidor(LPVOID lpParam) {
                     parsear_mensaje(inicio);
                 }
             }
-
             inicio = salto + 1;
         }
 
@@ -361,11 +309,11 @@ int inicializar_conexion(const char* handshake) {
     }
 
     // Configuracion de la IP y Puerto del servidor objetivo
-    config_servidor.sin_family           = AF_INET;
-    config_servidor.sin_addr.s_addr      = inet_addr(IP_SERVIDOR);
-    config_servidor.sin_port             = htons(PUERTO_SERVIDOR);
+    config_servidor.sin_family      = AF_INET;
+    config_servidor.sin_addr.s_addr = inet_addr(IP_SERVIDOR);
+    config_servidor.sin_port        = htons(PUERTO_SERVIDOR);
 
-    printf("[INFO] Intentando conexion...\n");
+     printf("[INFO] Intentando conexion...\n");
     if (connect(socket_cliente, (struct sockaddr*)&config_servidor, sizeof(config_servidor)) < 0) {
         printf("[ERROR] Servidor inalcanzable. Verifique que Java este en ejecucion.\n");
         return 0;

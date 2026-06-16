@@ -3,35 +3,37 @@
 
 /**
  * @file red.h
- * @brief Interfaz para el manejo de la comunicación cliente-servidor mediante Sockets.
+ * @brief Interfaz para el subsistema de red y sincronización por Sockets.
  */
 
 #include "structs.h"
 
 /**
- * @brief Vincula los arreglos de memoria gráfica con el hilo de red.
- * Permite que la función de parseo actualice la pantalla asíncronamente.
- * @param balas Lista de balas del JUGADOR (suben en pantalla).
- * @param balas_enemigas Lista de balas de los ALIENS (bajan en pantalla).
- *        Reutiliza la misma estructura ListaBala con velocidad negativa.
+ * @brief Enlaza los modelos de datos locales con el procesador de mensajes de red.
+ * @param jugadores Referencia al bloque de memoria de jugadores.
+ * @param aliens Referencia al bloque de memoria de enemigos.
+ * @param bunkers Referencia al bloque de memoria de defensas.
+ * @param ovni Referencia a la entidad especial.
+ * @param balas Referencia a la estructura de proyectiles aliados.
+ * @param balas_enemigas Referencia a la estructura de proyectiles hostiles.
  */
 void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker bunkers[], Ovni* ovni, ListaBala* balas, ListaBala* balas_enemigas);
 
 /**
- * @brief Inicializa Winsock2, conecta con Java y lanza el hilo de escucha.
- * @param handshake Cadena de texto inicial (Ej: "JUGADOR|1\n").
- * @return 1 si la conexión fue exitosa, 0 en caso de error.
+ * @brief Inicializa el subsistema de red y establece la conexión TCP.
+ * @param handshake Cadena de identificación de protocolo inicial.
+ * @return 1 en caso de éxito, 0 en caso de fallo de conexión.
  */
 int inicializar_conexion(const char* handshake);
 
 /**
- * @brief Envía una cadena de texto (comando) al servidor.
- * @param mensaje Puntero a la cadena de caracteres a enviar.
+ * @brief Transmite una instrucción formateada hacia el servidor.
+ * @param mensaje Cadena de caracteres del comando.
  */
 void enviar_comando_servidor(const char* mensaje);
 
 /**
- * @brief Cierra el socket de forma segura.
+ * @brief Finaliza la conexión activa y libera los recursos del socket.
  */
 void cerrar_conexion();
 
