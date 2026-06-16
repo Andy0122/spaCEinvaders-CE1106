@@ -102,7 +102,7 @@ public class Juego {
         this.bunkers                      = Collections.synchronizedList(new ArrayList<>());
         this.balasEnemigas                = new ListaEnlazada<>();
         this.balasJugador                 = new ListaEnlazada<>();
-        this.velocidadBaseExtraterrestres = 8; // velocidad inicial subida nuevamente (era 5)
+        this.velocidadBaseExtraterrestres = 4; // velocidad inicial subida nuevamente (era 5)
     }
 
     // =========================================================================
@@ -112,7 +112,7 @@ public class Juego {
         this.puntuacion                   = 0;
         this.gameOver                     = false;
         this.direccionAliens              = 1;
-        this.velocidadBaseExtraterrestres = 8; // velocidad inicial subida nuevamente (era 5)
+        this.velocidadBaseExtraterrestres = 4; // velocidad inicial subida nuevamente (era 5)
         this.jugador                      = new Jugador(400, 540);
 
         this.extraterrestres.clear();
@@ -209,10 +209,11 @@ public class Juego {
         if (gameOver) return;
 
         moverAliensEnFormacion();
+        moverOvnisActivos();  
         procesarDisparosEnemigos();
         moverBalasEnemigas();
-        moverBalasJugador(); // <--- NUEVO
-        verificarColisionesBalasJugador(); // <--- NUEVO
+        moverBalasJugador(); 
+        verificarColisionesBalasJugador(); 
         verificarColisionesBalas();
         verificarGameOver();
     }
@@ -330,12 +331,30 @@ public class Juego {
     private synchronized void tickOvni() {
         if (gameOver) return;
 
-        // Mover OVNIs activos y eliminar los que salieron de pantalla
+        // Si no hay OVNI activo, generar uno nuevo aleatorio
+        if (ovnis.isEmpty()) {
+            int dirValor         = rng.nextBoolean() ? 1 : -1;
+            // Para que aparezca fuera de la pantalla y entre suavemente
+            int xInicio          = dirValor > 0 ? -60 : LIMITE_X_MAX + 60; 
+            int puntosAleatorios = 50 + rng.nextInt(451); // 50–500
+            
+            // Le ponemos velocidad de 5 o 6 para que atraviese el cielo
+            Ovni nuevo = new Ovni(xInicio, 30, 30, puntosAleatorios, dirValor);
+            ovnis.put(nuevo.getId(), nuevo);
+            ObservadorJuego.notificarCreacionOvni(idPartida, nuevo.getId(),
+                    xInicio, 30, 30, puntosAleatorios);
+            System.out.println("[OVNI] Sala " + idPartida
+                    + ": OVNI generado automáticamente id=" + nuevo.getId());
+        }
+    }
+
+    private void moverOvnisActivos() {
         List<Integer> fuera = new ArrayList<>();
         for (Map.Entry<Integer, Ovni> entry : ovnis.entrySet()) {
             Ovni o = entry.getValue();
             o.mover();
             int x = o.getX();
+            // Si sale completamente de los bordes, lo eliminamos
             if (x < -100 || x > LIMITE_X_MAX + 100) {
                 fuera.add(entry.getKey());
                 ObservadorJuego.notificarOvniDestruido(idPartida, o.getId());
@@ -344,19 +363,6 @@ public class Juego {
             }
         }
         fuera.forEach(ovnis::remove);
-
-        // Si no hay OVNI activo, generar uno nuevo aleatorio
-        if (ovnis.isEmpty()) {
-            int dirValor         = rng.nextBoolean() ? 1 : -1;
-            int xInicio          = dirValor > 0 ? 0 : LIMITE_X_MAX;
-            int puntosAleatorios = 50 + rng.nextInt(451); // 50–500
-            Ovni nuevo = new Ovni(xInicio, 30, 5, puntosAleatorios, dirValor);
-            ovnis.put(nuevo.getId(), nuevo);
-            ObservadorJuego.notificarCreacionOvni(idPartida, nuevo.getId(),
-                    xInicio, 30, 5, puntosAleatorios);
-            System.out.println("[OVNI] Sala " + idPartida
-                    + ": OVNI generado automáticamente id=" + nuevo.getId());
-        }
     }
 
     // =========================================================================
