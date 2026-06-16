@@ -1,31 +1,30 @@
 /**
  * @file estructuras_datos.c
- * @brief Implementación de la lista enlazada simple para balas activas.
- *
- * La lista enlazada permite agregar y eliminar balas en O(1) al frente,
- * y recorrerla en O(n) para actualizarlas cada frame del game loop.
- *
+ * @brief Operaciones lógicas de la lista enlazada simple utilizada para memoria dinámica.
  */
 
 #include <stdlib.h>
-#include "structs.h"
+#include "../include/structs.h"
 
-/* --------------------------------------------------
- * lista_inicializar
- * -------------------------------------------------- */
+/**
+ * @brief Establece los valores iniciales de la lista.
+ * @param lista Puntero a la estructura a inicializar.
+ */
 void lista_inicializar(ListaBala* lista) {
     lista->cabeza   = NULL;
     lista->cantidad = 0;
 }
 
-/* --------------------------------------------------
- * lista_insertar_frente
- * Crea un nodo nuevo y lo enlaza al inicio de la lista.
- * Insertar al frente es O(1): no hay que recorrer nada.
- * -------------------------------------------------- */
+/**
+ * @brief Reserva un nuevo bloque de memoria y lo añade al inicio de la estructura enlazada.
+ * @param lista Puntero a la lista.
+ * @param x Coordenada X inicial.
+ * @param y Coordenada Y inicial.
+ * @param velocidad Escalador de avance por frame.
+ */
 void lista_insertar_frente(ListaBala* lista, int x, int y, int velocidad) {
     NodoBala* nuevo = (NodoBala*)malloc(sizeof(NodoBala));
-    if (nuevo == NULL) return; /* fallo de memoria: se ignora el disparo */
+    if (nuevo == NULL) return; 
 
     nuevo->x         = x;
     nuevo->y         = y;
@@ -36,11 +35,10 @@ void lista_insertar_frente(ListaBala* lista, int x, int y, int velocidad) {
     lista->cantidad++;
 }
 
-/* --------------------------------------------------
- * lista_mover_balas
- * Recorre la lista y resta la velocidad de cada nodo a su y,
- * haciendo que la bala suba en pantalla un frame.
- * -------------------------------------------------- */
+/**
+ * @brief Itera la lista aplicando el escalador de velocidad a cada nodo.
+ * @param lista Puntero a la lista de proyectiles a actualizar.
+ */
 void lista_mover_balas(ListaBala* lista) {
     NodoBala* actual = lista->cabeza;
     while (actual != NULL) {
@@ -49,12 +47,10 @@ void lista_mover_balas(ListaBala* lista) {
     }
 }
 
-/* --------------------------------------------------
- * lista_eliminar_fuera_de_pantalla
- * Recorre la lista con dos punteros (previo y actual) para
- * poder desenlazar y liberar nodos cuya y < 0 sin perder
- * el hilo de la lista.
- * -------------------------------------------------- */
+/**
+ * @brief Evalúa las coordenadas de cada nodo y libera aquellos marcados como inactivos o fuera del rango visible.
+ * @param lista Puntero a la lista a sanear.
+ */
 void lista_eliminar_fuera_de_pantalla(ListaBala* lista) {
     NodoBala* previo = NULL;
     NodoBala* actual = lista->cabeza;
@@ -63,16 +59,13 @@ void lista_eliminar_fuera_de_pantalla(ListaBala* lista) {
         NodoBala* siguiente = actual->siguiente;
 
         if (actual->y < 0) {
-            /* Desenlazar el nodo */
             if (previo == NULL) {
-                /* Era la cabeza */
                 lista->cabeza = siguiente;
             } else {
                 previo->siguiente = siguiente;
             }
             free(actual);
             lista->cantidad--;
-            /* previo no cambia: el nodo anterior sigue siendo el mismo */
         } else {
             previo = actual;
         }
@@ -81,11 +74,10 @@ void lista_eliminar_fuera_de_pantalla(ListaBala* lista) {
     }
 }
 
-/* --------------------------------------------------
- * lista_destruir
- * Libera todos los nodos restantes de la lista.
- * Se llama una sola vez al cerrar el programa.
- * -------------------------------------------------- */
+/**
+ * @brief Recorre la estructura completa liberando su bloque de memoria asignado.
+ * @param lista Puntero a la estructura a destruir.
+ */
 void lista_destruir(ListaBala* lista) {
     NodoBala* actual = lista->cabeza;
     while (actual != NULL) {

@@ -3,11 +3,10 @@ package estructuras_datos;
 import java.util.function.Consumer;
 
 /**
- * Lista enlazada simple genérica.
- * Se utiliza en el motor del juego para gestionar las balas enemigas activas:
- * inserción al frente en O(1) y recorrido en O(n) para actualizar posiciones.
- *
- * Patrón aplicado: Iterator implícito mediante el método forEach con Consumer<T>.
+ * @class ListaEnlazada
+ * @brief Estructura de datos dinámica de enlace simple.
+ * Implementa operaciones optimizadas de inserción en cabecera O(1) e iteración lineal O(n).
+ * @param <T> Tipo de dato genérico a almacenar.
  */
 public class ListaEnlazada<T> {
 
@@ -19,9 +18,10 @@ public class ListaEnlazada<T> {
         this.cantidad = 0;
     }
 
-    // ------------------------------------------------------------------
-    // Inserción al frente — O(1)
-    // ------------------------------------------------------------------
+    /**
+     * @brief Inserta un nuevo elemento en la cabecera de la estructura.
+     * @param dato Elemento a insertar.
+     */
     public void insertarFrente(T dato) {
         Nodo<T> nuevo = new Nodo<>(dato);
         nuevo.setSiguiente(cabeza);
@@ -29,9 +29,11 @@ public class ListaEnlazada<T> {
         cantidad++;
     }
 
-    // ------------------------------------------------------------------
-    // Eliminar por referencia exacta al dato — O(n)
-    // ------------------------------------------------------------------
+    /**
+     * @brief Localiza y remueve la primera coincidencia del elemento especificado.
+     * @param dato Referencia del elemento a remover.
+     * @return true si la operación fue exitosa, false si el elemento no fue encontrado.
+     */
     public boolean eliminar(T dato) {
         Nodo<T> previo = null;
         Nodo<T> actual = cabeza;
@@ -52,23 +54,24 @@ public class ListaEnlazada<T> {
         return false;
     }
 
-    // ------------------------------------------------------------------
-    // Recorrido con Consumer<T> — permite lambdas limpias
-    // ------------------------------------------------------------------
+    /**
+     * @brief Ejecuta una operación definida sobre cada elemento de la estructura.
+     * Protege la integridad de la iteración en caso de modificaciones concurrentes de la cabecera.
+     * @param accion Interfaz funcional a ejecutar por cada nodo.
+     */
     public void forEach(Consumer<T> accion) {
         Nodo<T> actual = cabeza;
         while (actual != null) {
-            // Guardar siguiente ANTES de ejecutar la acción, por si el Consumer
-            // modifica la lista internamente
             Nodo<T> siguiente = actual.getSiguiente();
             accion.accept(actual.getDato());
             actual = siguiente;
         }
     }
 
-    // ------------------------------------------------------------------
-    // Obtener todos los datos como arreglo (útil para iteración con remove)
-    // ------------------------------------------------------------------
+    /**
+     * @brief Transforma la estructura dinámica en un arreglo estático de referencias.
+     * @return Arreglo primitivo que contiene los elementos de la lista.
+     */
     @SuppressWarnings("unchecked")
     public T[] toArray() {
         Object[] arr = new Object[cantidad];

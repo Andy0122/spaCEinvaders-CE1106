@@ -1,5 +1,10 @@
 package modelo;
 
+/**
+ * @interface Enemigo
+ * @brief Contrato estándar para todas las entidades hostiles del juego.
+ * Define las operaciones básicas de identificación, posicionamiento y estado.
+ */
 public interface Enemigo {
     int getId();
     int getTipo();

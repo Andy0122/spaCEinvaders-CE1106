@@ -1,12 +1,11 @@
-/* 
- * Clase que representa a un extraterrestre en el juego Space Invaders. 
- * Tipos:
- *   1 = Calamar  → 10 pts
- *   2 = Cangrejo → 20 pts
- *   3 = Pulpo    → 40 pts
- */
 package modelo;
 
+/**
+ * @class Extraterrestre
+ * @brief Entidad hostil estándar del juego.
+ * Implementa la interfaz Enemigo y define el comportamiento para los tipos:
+ * 1 (Calamar), 2 (Cangrejo) y 3 (Pulpo).
+ */
 public class Extraterrestre implements Enemigo {
     private static int siguienteId = 1;
 
@@ -19,8 +18,10 @@ public class Extraterrestre implements Enemigo {
     private int velocidad;
 
     /**
-     * Constructor único. Recibe el tipo (1, 2 o 3) y la posición inicial.
-     * FabricaEnemigos es responsable de deducir el tipo antes de llamar aquí.
+     * @brief Inicializa una nueva instancia de un extraterrestre.
+     * @param tipo Clasificación del alienígena (1, 2 o 3).
+     * @param x Posición horizontal inicial.
+     * @param y Posición vertical inicial.
      */
     public Extraterrestre(int tipo, int x, int y) {
         this.id = siguienteId++;
@@ -43,9 +44,9 @@ public class Extraterrestre implements Enemigo {
 
     private int calcularPuntos(int tipo) {
         switch (tipo) {
-            case 1: return 10;   // Calamar
-            case 2: return 20;   // Cangrejo
-            case 3: return 40;   // Pulpo
+            case 1: return 10; // Calamar
+            case 2: return 20; // Cangrejo
+            case 3: return 40; // Pulpo
             default: return 10;
         }
     }
@@ -72,6 +73,10 @@ public class Extraterrestre implements Enemigo {
     @Override public void mover(int deltaX, int deltaY)    { this.x += deltaX; this.y += deltaY; }
     @Override public boolean estaDestruido()               { return vida <= 0; }
 
+    /**
+     * @brief Procesa el daño recibido tras una colisión con un proyectil.
+     * @return true si el impacto resultó en la destrucción de la entidad, false en caso contrario.
+     */
     public boolean recibirImpacto() {
         if (vida > 0) {
             vida -= 10;

@@ -1,21 +1,25 @@
-
-/**
- * Representa al jugador (cañón) del juego.
- * Contiene atributos de posición, vidas y velocidad, así como métodos para
- * mover el cañón, disparar balas y recibir impactos. La clase también incluye
- */
 package modelo;
 
+/**
+ * @class Jugador
+ * @brief Entidad que representa al usuario dentro del entorno de juego.
+ * Administra el estado espacial, contador de vidas y generación de proyectiles.
+ */
 public class Jugador {
-    private int x; // posición horizontal
-    private int y; // posición vertical
+    private int x; 
+    private int y; 
     private int vidas;
     private int velocidad;
 
+    /**
+     * @brief Constructor del jugador.
+     * @param inicioX Coordenada horizontal inicial.
+     * @param inicioY Coordenada vertical inicial.
+     */
     public Jugador(int inicioX, int inicioY) {
         this.x = inicioX;
         this.y = inicioY;
-        this.vidas = 3; // inicia con 3 vidas
+        this.vidas = 3; 
         this.velocidad = 5;
     }
 
@@ -25,24 +29,34 @@ public class Jugador {
 
     public void setVelocidad(int v) { this.velocidad = v; }
 
-    // Mueve el cañón a la izquierda
+    /**
+     * @brief Desplaza la entidad hacia la izquierda respetando los márgenes lógicos.
+     */
     public void moverIzquierda() {
         x -= velocidad;
         if (x < 0) x = 0;
     }
 
-    // Mueve el cañón a la derecha (se puede ajustar el límite externo desde quien lo use)
+    /**
+     * @brief Desplaza la entidad hacia la derecha respetando un límite establecido.
+     * @param limiteDerecho Límite máximo en el eje X.
+     */
     public void moverDerecha(int limiteDerecho) {
         x += velocidad;
         if (x > limiteDerecho) x = limiteDerecho;
     }
 
-    // Dispara una bala desde la posición actual. Se retorna una instancia interna Bala.
+    /**
+     * @brief Genera una instancia de proyectil instanciada desde la posición actual del cañón.
+     * @return Objeto Bala inicializado.
+     */
     public Bala disparar() {
-        return new Bala(x, y - 10); // la bala aparece por encima del cañón
+        return new Bala(x, y - 10);
     }
 
-    // El jugador recibe impacto: pierde una vida
+    /**
+     * @brief Reduce el contador de vidas tras una colisión enemiga.
+     */
     public void recibirImpacto() {
         if (vidas > 0) vidas--;
     }
@@ -56,11 +70,14 @@ public class Jugador {
         }
     }
 
-    // Clase interna simple para representar una bala del jugador
+    /**
+     * @class Bala
+     * @brief Estructura interna para el manejo espacial de los proyectiles aliados.
+     */
     public static class Bala {
         private int x;
         private int y;
-        private int velocidad = 10; // sentido hacia arriba
+        private int velocidad = 10; 
 
         public Bala(int x, int y) {
             this.x = x;
@@ -70,7 +87,6 @@ public class Jugador {
         public int getX() { return x; }
         public int getY() { return y; }
 
-        // Avanza la bala hacia arriba
         public void actualizar() {
             y -= velocidad;
         }

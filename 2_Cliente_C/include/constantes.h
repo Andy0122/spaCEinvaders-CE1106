@@ -3,59 +3,39 @@
 
 /**
  * @file constantes.h
- * @brief Definición de constantes globales para el cliente de spaCEinvaders.
- * Cumple con el requerimiento de aislar los valores "hardcodeados" del código fuente.
+ * @brief Parámetros y constantes globales de configuración del sistema.
  */
 
-/* ==========================================
- * Constantes de Configuración de Red
- * ========================================== */
+// Configuración de Red e Interfaces
 #define PUERTO_SERVIDOR 8080
 #define IP_SERVIDOR "127.0.0.1"
 #define TAMANO_BUFFER 1024
 #define PUERTO_CONTROL "COM7"
 
-/* ==========================================
- * Constantes de Protocolo de Comunicación
- * ========================================== */
+// Protocolo de Comunicación
 #define ROL_JUGADOR "JUGADOR\n"
 #define ROL_ESPECTADOR "ESPECTADOR\n"
 
-/* ==========================================
- * Constantes de Interfaz Gráfica (GUI)
- * ========================================== */
-#define ANCHO_PANTALLA 800  /**< Ancho de la ventana principal en píxeles */
-#define ALTO_PANTALLA 600   /**< Alto de la ventana principal en píxeles */
-#define FPS_OBJETIVO 60     /**< Tasa de refresco objetivo para Raylib */
+// Configuración del Motor Gráfico
+#define ANCHO_PANTALLA 800  /**< Dimensión horizontal de la ventana. */
+#define ALTO_PANTALLA 600   /**< Dimensión vertical de la ventana. */
+#define FPS_OBJETIVO 60     /**< Tasa de refresco objetivo. */
 
-/* ==========================================
- * Constantes de Dimensiones de Entidades
- * ========================================== */
-#define ANCHO_CANON 40      /**< Ancho del sprite del cañón del jugador */
-#define ALTO_CANON 20       /**< Alto del sprite del cañón del jugador */
-#define ANCHO_ALIEN 30      /**< Ancho del sprite de los extraterrestres (hitbox, no render) */
-#define ALTO_ALIEN 30       /**< Alto del sprite de los extraterrestres (hitbox, no render) */
+// Dimensiones Físicas (Hitboxes)
+#define ANCHO_CANON 40      
+#define ALTO_CANON 20       
+#define ANCHO_ALIEN 30      
+#define ALTO_ALIEN 30       
 
-/* ==========================================
- * Constantes de Matriz y Juego
- * ========================================== */
+// Parámetros de Juego
 #define FILAS_ALIENS 5
 #define COLUMNAS_ALIENS 11
 #define CANTIDAD_BUNKERS 4
 #define VIDAS_INICIALES 3
+#define MAX_ALIENS 128      
 
-/* ==========================================
- * Constantes de la Lista Enlazada / Balas
- * ========================================== */
-#define VELOCIDAD_BALA 8           /**< Píxeles por frame que avanza la bala del jugador */
-/**
- * Píxeles por TICK del servidor (no por frame de Raylib) que avanza una
- * bala enemiga. Debe coincidir exactamente con VELOCIDAD_BALA_ENEMIGA en
- * Juego.java; si se cambia uno, hay que cambiar el otro para que la
- * posición visual de la bala en el cliente siga representando fielmente
- * el instante en que el servidor resuelve la colisión.
- */
-#define VELOCIDAD_BALA_ENEMIGA 14
-#define MAX_ALIENS 128  /**< Máximo de aliens simultáneos registrables */
+// Físicas y Cinemática
+#define VELOCIDAD_BALA 8            /**< Desplazamiento por frame de proyectiles aliados. */
+#define VELOCIDAD_BALA_ENEMIGA 14   /**< Desplazamiento por ciclo de servidor de proyectiles hostiles. */
 
 #endif // CONSTANTES_H
