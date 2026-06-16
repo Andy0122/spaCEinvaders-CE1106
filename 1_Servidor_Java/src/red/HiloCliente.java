@@ -60,6 +60,14 @@ public class HiloCliente implements Runnable {
             DespachadorMensajes.registrar(idPartida, flujoSalida);
             System.out.println("[CONEXION] Nuevo " + rol + " conectado a Sala " + idPartida);
 
+            // 2.1. Reenviar el estado COMPLETO de la partida AHORA que el
+            //      socket ya está registrado (jugadores Y espectadores).
+            //      Antes esto se hacía dentro de iniciarJuego() (antes de
+            //      este registro), así que el broadcast de la ola inicial
+            //      siempre se perdía en silencio: el cliente nunca recibía
+            //      ningún mensaje ALIEN.
+            miPartida.reenviarEstadoActual();
+
             // 3. Ciclo de escucha de comandos (Las pulsaciones de teclas/ESP8266)
             String mensaje;
             while ((mensaje = flujoEntrada.readLine()) != null) {

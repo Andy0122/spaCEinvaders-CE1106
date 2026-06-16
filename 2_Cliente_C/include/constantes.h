@@ -33,8 +33,8 @@
  * ========================================== */
 #define ANCHO_CANON 40      /**< Ancho del sprite del cañón del jugador */
 #define ALTO_CANON 20       /**< Alto del sprite del cañón del jugador */
-#define ANCHO_ALIEN 30      /**< Ancho del sprite de los extraterrestres */
-#define ALTO_ALIEN 30       /**< Alto del sprite de los extraterrestres */
+#define ANCHO_ALIEN 30      /**< Ancho del sprite de los extraterrestres (hitbox, no render) */
+#define ALTO_ALIEN 30       /**< Alto del sprite de los extraterrestres (hitbox, no render) */
 
 /* ==========================================
  * Constantes de Matriz y Juego
@@ -47,7 +47,15 @@
 /* ==========================================
  * Constantes de la Lista Enlazada / Balas
  * ========================================== */
-#define VELOCIDAD_BALA 8    /**< Píxeles por frame que avanza la bala del jugador */
+#define VELOCIDAD_BALA 8           /**< Píxeles por frame que avanza la bala del jugador */
+/**
+ * Píxeles por TICK del servidor (no por frame de Raylib) que avanza una
+ * bala enemiga. Debe coincidir exactamente con VELOCIDAD_BALA_ENEMIGA en
+ * Juego.java; si se cambia uno, hay que cambiar el otro para que la
+ * posición visual de la bala en el cliente siga representando fielmente
+ * el instante en que el servidor resuelve la colisión.
+ */
+#define VELOCIDAD_BALA_ENEMIGA 14
 #define MAX_ALIENS 128  /**< Máximo de aliens simultáneos registrables */
 
 #endif // CONSTANTES_H

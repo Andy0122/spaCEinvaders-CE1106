@@ -16,7 +16,12 @@ void dibujar_hud(int puntuacion, int vidas);
 void dibujar_bunkers(Bunker bunkers[], int cantidad);
 void dibujar_matriz_aliens(Extraterrestre aliens[], int total_aliens);
 void dibujar_ovni(Ovni* o);
-void dibujar_balas(ListaBala* lista); 
+void dibujar_balas(ListaBala* lista);
+/**
+ * @brief Dibuja las balas de los aliens (descendentes) en color rojo,
+ * para distinguirlas visualmente de las balas amarillas del jugador.
+ */
+void dibujar_balas_enemigas(ListaBala* lista);
 void cerrar_gui();
 
 #endif // GUI_H

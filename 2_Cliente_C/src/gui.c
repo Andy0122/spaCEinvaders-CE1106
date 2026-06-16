@@ -1,6 +1,12 @@
 /**
  * @file gui.c
  * @brief Implementación de las funciones de renderizado del cliente utilizando Sprites redimensionados.
+ *
+ * Cambios aplicados:
+ *  - Sprites de aliens y OVNI agrandados (ver gui.h / ANCHO_ALIEN_RENDER).
+ *  - Nueva función dibujar_balas_enemigas() para mostrar las balas de los
+ *    aliens (antes invisibles: el daño a bunkers/jugador parecía no tener
+ *    causa visible en pantalla).
  */
 
 #include "../include/gui.h"
@@ -8,6 +14,15 @@
 #include "../include/structs.h"
 #include "raylib.h"
 #include "stdlib.h"
+
+/*
+ * Tamaño de RENDERIZADO de los aliens, independiente de ANCHO_ALIEN/
+ * ALTO_ALIEN (que siguen siendo 30x30 en constantes.h y se usan para el
+ * cálculo de colisiones e hitboxes). Esto permite agrandar visualmente los
+ * sprites sin afectar la lógica de colisión ya validada.
+ */
+#define ANCHO_ALIEN_RENDER (ANCHO_ALIEN + 15)  /* 30 -> 45 */
+#define ALTO_ALIEN_RENDER  (ALTO_ALIEN  + 15)  /* 30 -> 45 */
 
 // Variables globales estáticas para almacenar las texturas en la VRAM
 static Texture2D tex_jugador;
@@ -31,11 +46,11 @@ void inicializar_gui() {
 
     // Redimensiona las imágenes usando las dimensiones exactas de constantes.h
     ImageResize(&img_jugador, ANCHO_CANON, ALTO_CANON);
-    ImageResize(&img_pulpo, ANCHO_ALIEN, ALTO_ALIEN);
-    ImageResize(&img_cangrejo, ANCHO_ALIEN, ALTO_ALIEN);
-    ImageResize(&img_calamar, ANCHO_ALIEN, ALTO_ALIEN);
+    ImageResize(&img_pulpo, ANCHO_ALIEN_RENDER, ALTO_ALIEN_RENDER);
+    ImageResize(&img_cangrejo, ANCHO_ALIEN_RENDER, ALTO_ALIEN_RENDER);
+    ImageResize(&img_calamar, ANCHO_ALIEN_RENDER, ALTO_ALIEN_RENDER);
     ImageResize(&img_bunker, 60, 40);
-    ImageResize(&img_ovni, ANCHO_ALIEN * 2, ALTO_ALIEN * 1);
+    ImageResize(&img_ovni, ANCHO_ALIEN_RENDER * 2, ALTO_ALIEN_RENDER);
 
     // Convierte las imágenes modificadas a texturas para la VRAM
     tex_jugador = LoadTextureFromImage(img_jugador);
@@ -96,14 +111,27 @@ void dibujar_ovni(Ovni *o) {
 }
 
 /**
- * @brief Recorre la lista enlazada de balas y dibuja cada una.
- * Cada bala se representa como un rectángulo blanco delgado (4x12 px)
+ * @brief Recorre la lista enlazada de balas del JUGADOR y dibuja cada una.
+ * Cada bala se representa como un rectángulo amarillo delgado (4x12 px)
  * centrado horizontalmente en su posición x.
  */
 void dibujar_balas(ListaBala* lista) {
     NodoBala* actual = lista->cabeza;
     while (actual != NULL) {
         DrawRectangle(actual->x - 2, actual->y, 4, 12, YELLOW);
+        actual = actual->siguiente;
+    }
+}
+
+/**
+ * @brief Recorre la lista enlazada de balas ENEMIGAS y dibuja cada una.
+ * Mismo tamaño que las del jugador pero en color rojo, para distinguir
+ * visualmente quién disparó cada bala en pantalla.
+ */
+void dibujar_balas_enemigas(ListaBala* lista) {
+    NodoBala* actual = lista->cabeza;
+    while (actual != NULL) {
+        DrawRectangle(actual->x - 2, actual->y, 4, 12, RED);
         actual = actual->siguiente;
     }
 }
