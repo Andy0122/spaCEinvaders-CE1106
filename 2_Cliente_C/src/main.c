@@ -33,12 +33,13 @@
  *   - Marca el alien como destruido localmente (estado = 0).
  *   - Envía JUGADOR|ELIMINAR_ALIEN|id al servidor.
  * ------------------------------------------------------- */
+/*
 static void verificar_colisiones_balas_aliens(ListaBala* lista,
                                                Extraterrestre aliens[],
                                                int total_aliens) {
     NodoBala* bala = lista->cabeza;
     while (bala != NULL) {
-        /* Bala ya marcada como eliminada este frame: saltar */
+        // Bala ya marcada como eliminada este frame: saltar 
         if (bala->y < 0) {
             bala = bala->siguiente;
             continue;
@@ -47,34 +48,35 @@ static void verificar_colisiones_balas_aliens(ListaBala* lista,
         for (int i = 0; i < total_aliens; i++) {
             if (aliens[i].id == -1 || aliens[i].estado == 0) continue;
 
-            /* Hitbox: bala centrada en (bala->x, bala->y), alien en rect (ax,ay,ANCHO_ALIEN,ALTO_ALIEN) */
+           // Hitbox: bala centrada en (bala->x, bala->y), alien en rect (ax,ay,ANCHO_ALIEN,ALTO_ALIEN)
             int bx = bala->x;
             int by = bala->y;
             int ax = aliens[i].x;
             int ay = aliens[i].y;
 
-            /* Margen de 4px para que colisiones se sientan justas */
+            // Margen de 4px para que colisiones se sientan justas 
             if (bx >= ax - 4 && bx <= ax + ANCHO_ALIEN + 4 &&
                 by >= ay - 4 && by <= ay + ALTO_ALIEN + 4) {
 
-                /* Destruir alien localmente */
+                // Destruir alien localmente 
                 aliens[i].estado = 0;
 
-                /* Notificar al servidor */
+                // Notificar al servidor 
                 char cmd[64];
                 snprintf(cmd, sizeof(cmd), "JUGADOR|ELIMINAR_ALIEN|%d\n", aliens[i].id);
                 enviar_comando_servidor(cmd);
 
-                /* Marcar bala para eliminación */
+                // Marcar bala para eliminación 
                 bala->y = -999;
 
                 printf("[COLISION] Bala impacto alien id=%d\n", aliens[i].id);
-                break; /* una bala solo mata un alien */
+                break; // una bala solo mata un alien 
             }
         }
         bala = bala->siguiente;
     }
 }
+*/
 
 /* -------------------------------------------------------
  * Detecta colisiones entre todas las balas activas y el OVNI,
@@ -83,6 +85,7 @@ static void verificar_colisiones_balas_aliens(ListaBala* lista,
  *   - Apaga el OVNI localmente (activo = 0).
  *   - Envía JUGADOR|ELIMINAR_OVNI|id al servidor.
  * ------------------------------------------------------- */
+/*
 static void verificar_colisiones_balas_ovni(ListaBala* lista, Ovni* ovni) {
     if (ovni == NULL || ovni->activo != 1) return;
 
@@ -98,7 +101,7 @@ static void verificar_colisiones_balas_ovni(ListaBala* lista, Ovni* ovni) {
         int ox = ovni->x;
         int oy = ovni->y;
 
-        /* OVNI mide ANCHO_ALIEN*2 x ALTO_ALIEN (ver gui.c) */
+        // OVNI mide ANCHO_ALIEN*2 x ALTO_ALIEN (ver gui.c) 
         if (bx >= ox - 4 && bx <= ox + (ANCHO_ALIEN * 2) + 4 &&
             by >= oy - 4 && by <= oy + ALTO_ALIEN + 4) {
 
@@ -111,11 +114,12 @@ static void verificar_colisiones_balas_ovni(ListaBala* lista, Ovni* ovni) {
             bala->y = -999;
 
             printf("[COLISION] Bala impacto OVNI id=%d\n", ovni->id);
-            break; /* solo un OVNI activo a la vez */
+            break; // solo un OVNI activo a la vez
         }
         bala = bala->siguiente;
     }
 }
+*/
 
 /* -------------------------------------------------------
  * Elimina balas enemigas que ya salieron por la parte INFERIOR
@@ -328,11 +332,11 @@ int main() {
             contador_frames_bala_enemiga = 0;
         }
 
-        /* FIX 1: detectar colisiones ANTES de eliminar balas fuera de pantalla */
+        /* FIX 1: detectar colisiones ANTES de eliminar balas fuera de pantalla 
         if (opcion_rol != 3) {
             verificar_colisiones_balas_aliens(&lista_balas, arreglo_aliens, MAX_ALIENS);
             verificar_colisiones_balas_ovni(&lista_balas, &mi_ovni);
-        }
+        }*/
 
         lista_eliminar_fuera_de_pantalla(&lista_balas);
         marcar_balas_enemigas_fuera_de_pantalla(&lista_balas_enemigas);

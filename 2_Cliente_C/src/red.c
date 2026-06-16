@@ -239,6 +239,15 @@ static void parsear_mensaje(const char* mensaje) {
         }
     }
 
+    /* ------ BALA_JUGADOR_DESTRUIDA ------ */
+    else if (strcmp(tipo, "BALA_JUGADOR_DESTRUIDA") == 0) {
+        int x, y;
+        if (sscanf(mensaje, "BALA_JUGADOR_DESTRUIDA|%d|%d", &x, &y) == 2) {
+            // Reutilizamos la misma función de distancia, pero pasándole la lista de balas amarillas
+            eliminar_bala_enemiga_cercana(ptr_balas, x, y);
+        }
+    }
+
     /* ------ GAME_OVER ------ */
     else if (strcmp(tipo, "GAME_OVER") == 0) {
         printf("[RED] GAME OVER recibido del servidor.\n");

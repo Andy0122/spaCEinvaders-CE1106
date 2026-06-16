@@ -146,4 +146,10 @@ public class ObservadorJuego {
     public static void notificarGameOver(int idPartida) {
         DespachadorMensajes.broadcast(idPartida, "GAME_OVER");
     }
+
+    public static void notificarBalaJugadorDestruida(int idPartida, int x, int y) {
+        String msj = "BALA_JUGADOR_DESTRUIDA|" + x + "|" + y;
+        DespachadorMensajes.broadcast(idPartida, msj);
+    }
+
 }

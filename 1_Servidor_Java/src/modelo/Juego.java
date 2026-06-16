@@ -83,6 +83,7 @@ public class Juego {
      * Cada bala es un int[]{x, y} con la coordenada actual.
      */
     private final ListaEnlazada<int[]> balasEnemigas;
+    private final ListaEnlazada<int[]> balasJugador;
 
     private final Random rng = new Random();
 
@@ -100,6 +101,7 @@ public class Juego {
         this.ovnis                        = new ConcurrentHashMap<>();
         this.bunkers                      = Collections.synchronizedList(new ArrayList<>());
         this.balasEnemigas                = new ListaEnlazada<>();
+        this.balasJugador                 = new ListaEnlazada<>();
         this.velocidadBaseExtraterrestres = 8; // velocidad inicial subida nuevamente (era 5)
     }
 
@@ -117,6 +119,7 @@ public class Juego {
         this.ovnis.clear();
         this.bunkers.clear();
         this.balasEnemigas.limpiar();
+        this.balasJugador.limpiar();
 
         this.bunkers.add(new Bunker(0,  50, 450));
         this.bunkers.add(new Bunker(1, 250, 450));
@@ -208,6 +211,8 @@ public class Juego {
         moverAliensEnFormacion();
         procesarDisparosEnemigos();
         moverBalasEnemigas();
+        moverBalasJugador(); // <--- NUEVO
+        verificarColisionesBalasJugador(); // <--- NUEVO
         verificarColisionesBalas();
         verificarGameOver();
     }
@@ -501,9 +506,13 @@ public class Juego {
             }
 
             case "DISPARAR": {
-                ObservadorJuego.notificarDisparoJugador(idPartida,
-                        jugador.getX(), jugador.getY());
-                return "OK|DISPARO|" + jugador.getX() + "|" + jugador.getY();
+                // Centramos la bala con respecto al cañón (aprox +20 en X)
+                int bx = jugador.getX() + 20; 
+                int by = jugador.getY() - 10;
+                balasJugador.insertarFrente(new int[]{bx, by});
+        
+                ObservadorJuego.notificarDisparoJugador(idPartida, bx, by);
+                return "OK|DISPARO|" + bx + "|" + by;
             }
 
             case "IMPACTO": {
@@ -674,4 +683,69 @@ public class Juego {
             .filter(t -> !t.isEmpty())
             .toArray(String[]::new);
     }
+
+    // ─── Lógica de balas del JUGADOR (Centralizada en el Servidor) ──────
+    private void moverBalasJugador() {
+        List<int[]> aEliminar = new ArrayList<>();
+        // Como el tick es cada 200ms, la bala debe avanzar bastante para igualar los 60fps del cliente
+        balasJugador.forEach(bala -> {
+            bala[1] -= 96; 
+            if (bala[1] < -50) aEliminar.add(bala); // Salió de pantalla
+        });
+        for (int[] b : aEliminar) balasJugador.eliminar(b);
+    }
+
+    private void verificarColisionesBalasJugador() {
+        List<int[]> aEliminar = new ArrayList<>();
+
+        balasJugador.forEach(bala -> {
+            boolean impactada = false;
+
+            // 1. ¿Toca a algún Alien?
+            for (Enemigo e : extraterrestres.values()) {
+                // Hitbox con tolerancia y alargado hacia abajo (para capturar la bala en movimiento)
+                if (bala[0] >= e.getPosicionX() - 15 && bala[0] <= e.getPosicionX() + 45 &&
+                    bala[1] <= e.getPosicionY() + 40 && bala[1] >= e.getPosicionY() - 96) {
+                    destruirExtraterrestre(e.getId());
+                    impactada = true;
+                    break;
+                }
+            }
+
+            // 2. ¿Toca al OVNI?
+            if (!impactada) {
+                for (Ovni o : ovnis.values()) {
+                    if (bala[0] >= o.getX() - 15 && bala[0] <= o.getX() + 75 &&
+                        bala[1] <= o.getY() + 40 && bala[1] >= o.getY() - 96) {
+                        destruirOvni(o.getId());
+                        impactada = true;
+                        break;
+                    }
+                }
+            }
+
+            // 3. ¿Toca algún Bunker?
+            if (!impactada) {
+                for (Bunker b : bunkers) {
+                    if (!b.estaDestruido() &&
+                        bala[0] >= b.getPosicionX() - 10 && bala[0] <= b.getPosicionX() + 50 &&
+                        bala[1] <= b.getPosicionY() + 40 && bala[1] >= b.getPosicionY() - 96) {
+                        
+                        b.recibirImpacto();
+                        ObservadorJuego.notificarBunkerActualizado(idPartida, b.getId(), b.getVida());
+                        impactada = true;
+                        break;
+                    }
+                }
+            }
+
+            if (impactada) {
+                ObservadorJuego.notificarBalaJugadorDestruida(idPartida, bala[0], bala[1]);
+                aEliminar.add(bala);
+            }
+        });
+
+        for (int[] b : aEliminar) balasJugador.eliminar(b);
+    }
+
 }
