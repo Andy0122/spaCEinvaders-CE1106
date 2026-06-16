@@ -21,13 +21,15 @@ static Jugador* ptr_jugadores;
 static Extraterrestre* ptr_aliens;
 static Bunker* ptr_bunkers;
 static Ovni* ptr_ovni;
+static ListaBala* ptr_balas;
 static char mensaje_handshake[64];
 
-void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker bunkers[], Ovni* ovni) {
+void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker bunkers[], Ovni* ovni, ListaBala* balas) {
     ptr_jugadores = jugadores;
     ptr_aliens = aliens;
     ptr_bunkers = bunkers;
     ptr_ovni = ovni;
+    ptr_balas = balas;
 }
 
 /**
@@ -151,6 +153,16 @@ static void parsear_mensaje(const char* mensaje) {
         if (sscanf(mensaje, "IMPACTO_JUGADOR|%d", &vidas) == 1) {
             printf("[RED] Impacto recibido! Vidas restantes: %d\n", vidas);
             // Las vidas se sincronizan definitivamente por el mensaje JUGADOR siguiente
+        }
+    }
+
+    /* ------ DISPARO (Se dibuja la bala validada por el servidor) ------ */
+    else if (strcmp(tipo, "DISPARO") == 0) {
+        int id, x, y;
+        if (sscanf(mensaje, "DISPARO|%d|%d|%d", &id, &x, &y) == 3) {
+            if (ptr_balas != NULL) {
+                lista_insertar_frente(ptr_balas, x, y, VELOCIDAD_BALA);
+            }
         }
     }
 }

@@ -99,7 +99,7 @@ int main() {
     /* -------------------------------------------------------
      * 3. Vincular punteros de red y conectar
      * ------------------------------------------------------- */
-    vincular_punteros_red(arreglo_jugadores, arreglo_aliens, arreglo_bunkers, &mi_ovni);
+    vincular_punteros_red(arreglo_jugadores, arreglo_aliens, arreglo_bunkers, &mi_ovni, &lista_balas);
 
     if (!inicializar_conexion(cadena_handshake)) {
         printf("[FATAL] Abortando ejecucion por fallo de red.\n");
@@ -146,13 +146,6 @@ int main() {
                         enviar_comando_servidor("JUGADOR|MOVER_DER\n");
                     }
                     else if (cmd == 'S') {
-                        /*
-                         * DISPARO: se agrega una bala a la lista enlazada centrada
-                         * en el cañón, y se notifica al servidor.
-                         */
-                        int canon_x = arreglo_jugadores[mi_indice_jugador].posicion_x + (ANCHO_CANON / 2);
-                        int canon_y = ALTO_PANTALLA - 60;
-                        lista_insertar_frente(&lista_balas, canon_x, canon_y - 12, VELOCIDAD_BALA);
                         printf("[INFO] Disparo recibido por UART\n");
                         enviar_comando_servidor("JUGADOR|DISPARAR\n");
                     }
@@ -175,9 +168,6 @@ int main() {
                     enviar_comando_servidor("JUGADOR|MOVER_DER\n");
                 }
                 if (IsKeyPressed(KEY_SPACE)) {
-                    int canon_x = arreglo_jugadores[mi_indice_jugador].posicion_x + (ANCHO_CANON / 2);
-                    int canon_y = ALTO_PANTALLA - 60;
-                    lista_insertar_frente(&lista_balas, canon_x, canon_y - 12, VELOCIDAD_BALA);
                     printf("[INFO] Disparo por teclado\n");
                     enviar_comando_servidor("JUGADOR|DISPARAR\n");
                 }

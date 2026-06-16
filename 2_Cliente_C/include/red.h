@@ -12,7 +12,7 @@
  * @brief Vincula los arreglos de memoria gráfica con el hilo de red.
  * Permite que la función de parseo actualice la pantalla asíncronamente.
  */
-void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker bunkers[], Ovni* ovni);
+void vincular_punteros_red(Jugador jugadores[], Extraterrestre aliens[], Bunker bunkers[], Ovni* ovni, ListaBala* balas);
 
 /**
  * @brief Inicializa Winsock2, conecta con Java y lanza el hilo de escucha.
