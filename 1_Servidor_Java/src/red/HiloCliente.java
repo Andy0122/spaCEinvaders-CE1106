@@ -17,6 +17,7 @@ public class HiloCliente implements Runnable {
     private Socket socket;
     private PrintWriter flujoSalida;
     private BufferedReader flujoEntrada;
+    private int idPartidaActual = -1;
 
     public HiloCliente(Socket socket) {
         this.socket = socket;
@@ -40,6 +41,7 @@ public class HiloCliente implements Runnable {
             String[] datosHandshake = handshake.split("\\|");
             String rol = datosHandshake[0].trim();
             int idPartida = Integer.parseInt(datosHandshake[1].trim());
+            this.idPartidaActual = idPartida;
 
             Juego miPartida;
 
@@ -67,6 +69,7 @@ public class HiloCliente implements Runnable {
             //      siempre se perdía en silencio: el cliente nunca recibía
             //      ningún mensaje ALIEN.
             miPartida.reenviarEstadoActual();
+            miPartida.reanudarJuego();
 
             // 3. Ciclo de escucha de comandos (Las pulsaciones de teclas/ESP8266)
             String mensaje;
@@ -85,6 +88,20 @@ public class HiloCliente implements Runnable {
 
     private void cerrarConexion() {
         try {
+            // NUEVO BLOQUE: Limpieza del registro y pausa del motor
+            if (idPartidaActual != -1 && flujoSalida != null) {
+                DespachadorMensajes.remover(idPartidaActual, flujoSalida);
+                System.out.println("[RED] Cliente removido de la sala " + idPartidaActual);
+                
+                // Si la sala quedó vacía, pausamos el juego
+                if (DespachadorMensajes.estaSalaVacia(idPartidaActual)) {
+                    Juego juego = GestorPartidas.obtenerPartidaExistente(idPartidaActual);
+                    if (juego != null) {
+                        juego.pausarJuego();
+                    }
+                }
+            }
+            
             if (flujoEntrada != null) flujoEntrada.close();
             if (flujoSalida != null) flujoSalida.close();
             if (socket != null && !socket.isClosed()) socket.close();

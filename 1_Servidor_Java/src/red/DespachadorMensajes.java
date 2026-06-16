@@ -33,4 +33,9 @@ public class DespachadorMensajes {
             }
         }
     }
+    
+    public static boolean estaSalaVacia(int idPartida) {
+        Set<PrintWriter> sala = salas.get(idPartida);
+        return sala == null || sala.isEmpty();
+    }
 }

@@ -754,4 +754,18 @@ public class Juego {
         for (int[] b : aEliminar) balasJugador.eliminar(b);
     }
 
+    public synchronized void pausarJuego() {
+        if (!gameOver) {
+            detenerLoops();
+            System.out.println("[JUEGO] Sala " + idPartida + ": Juego pausado (sin clientes conectados).");
+        }
+    }
+
+    public synchronized void reanudarJuego() {
+        // Solo lo reanudamos si no hay Game Over y si los hilos están apagados
+        if (!gameOver && (scheduler == null || scheduler.isShutdown())) {
+            arrancarLoops();
+            System.out.println("[JUEGO] Sala " + idPartida + ": Juego reanudado.");
+        }
+    }
 }
